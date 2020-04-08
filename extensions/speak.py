@@ -114,6 +114,8 @@ class Speak(commands.Cog):
     async def speak_help(self, ctx: commands.Context):
         embed = Embed(title="Speak help")
         embed.add_field(name="speak", value="Join the waiting list", inline=False)
+        embed.add_field(name="speak react", value="Be the next to speak to react and debate with the current speaker",
+                        inline=False)
         embed.add_field(name="speak remove [@pepole, @...]",
                         value="Remove yourself or mentioned person from the waiting list", inline=False)
         embed.add_field(name="speak list", value="Show the waiting list", inline=False)
