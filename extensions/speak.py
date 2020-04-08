@@ -117,12 +117,15 @@ class Speak(commands.Cog):
     @speak.group("clear", pass_context=True)
     @commands.guild_only()
     async def speak_clear(self, ctx: commands.Context):
-        if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members:
+        speak_channel = ctx.guild.get_channel(self.voice_chan)
+        if not self.voice_chan or not speak_channel.permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
         else:
             self.waiting = []
             self.lastSpeaker = None
-            await self.speak_unmute(ctx)
+            for client in speak_channel.members:
+                if client != ctx.author and not client.bot:
+                    await client.edit(mute=False)
             self.strict = False
             self.voice_chan = None
             await ctx.message.add_reaction("\U0001f44d")
@@ -130,7 +133,8 @@ class Speak(commands.Cog):
     @speak.group("mute", pass_context=True)
     @commands.guild_only()
     async def speak_mute(self, ctx: commands.Context):
-        if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members or not self.voice_chan:
+        if ctx.author.voice is None or ctx.author.voice.channel is None or \
+                not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
         else:
             for client in ctx.author.voice.channel.members:
@@ -141,7 +145,8 @@ class Speak(commands.Cog):
     @speak.group("unmute", pass_context=True)
     @commands.guild_only()
     async def speak_unmute(self, ctx: commands.Context):
-        if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members or not self.voice_chan:
+        if ctx.author.voice is None or ctx.author.voice.channel is None or \
+                not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
         else:
             for client in ctx.author.voice.channel.members:
@@ -154,8 +159,8 @@ class Speak(commands.Cog):
         if (before is None or before.channel is None or before.channel.id != self.voice_chan) and\
                 (after is not None and after.channel is not None and after.channel.id == self.voice_chan and self.strict):
             await member.edit(mute=True)
-        elif (before is not None or before.channel is not None and before.channel.id == self.voice_chan) and\
-                (after is None or after.channel is None or after.channel.id != self.voice_chan):
+        elif (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and\
+                (after is not None and after.channel is not None and after.channel.id != self.voice_chan):
             await member.edit(mute=False)
 
     @commands.Cog.listener()
