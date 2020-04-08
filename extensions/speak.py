@@ -16,6 +16,8 @@ class Speak(commands.Cog):
         self.voice_chan = None
         self.waiting = []
         self.lastSpeaker = None
+        self.reaction = []
+        self.lastReaction = None
 
     @commands.group("speak", pass_context=True)
     @commands.guild_only()
@@ -32,6 +34,17 @@ class Speak(commands.Cog):
             else:
                 self.waiting.append(ctx.author.id)
                 await ctx.message.add_reaction("\U0001f44d")
+
+    @speak.group("react", pass_context=True)
+    @commands.guild_only()
+    async def speak_react(self, ctx: commands.Context):
+        if ctx.author.voice is None or ctx.author.voice.channel is None or self.voice_chan is None or \
+                ctx.author.voice.channel.id != self.voice_chan or ctx.author.id in self.reaction or \
+                self.lastSpeaker is None or self.lastSpeaker == ctx.author.id:
+            await ctx.message.add_reaction("\u274C")
+        else:
+            self.reaction.append(ctx.author.id)
+            await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("remove", pass_context=True)
     @commands.guild_only()
@@ -56,8 +69,12 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\u274C")
         else:
             embed = Embed(title="Waiting list")
+            if len(self.reaction) != 0:
+                for i, reaction in enumerate(self.reaction):
+                    embed.add_field(name=f"Reaction N°{i+1}", value=ctx.guild.get_member(reaction).display_name,
+                                    inline=False)
             for i, speaker in enumerate(self.waiting):
-                embed.add_field(name=f"N°{i+1}", value=ctx.guild.get_member(speaker).display_name, inline=True)
+                embed.add_field(name=f"N°{i+1}", value=ctx.guild.get_member(speaker).display_name, inline=False)
             await ctx.send(embed=embed)
 
     @speak.group("next", pass_context=True)
@@ -66,18 +83,30 @@ class Speak(commands.Cog):
         if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
         else:
-            if self.lastSpeaker:
+            if self.lastReaction:
+                self.reaction.remove(self.lastReaction)
+                if self.strict:
+                    await ctx.guild.get_member(self.lastReaction).edit(mute=True)
+            if self.lastSpeaker and len(self.reaction) == 0:
                 self.waiting.remove(self.lastSpeaker)
                 if self.strict:
                     await ctx.guild.get_member(self.lastSpeaker).edit(mute=True)
-            if len(self.waiting) != 0:
-                user : Member = ctx.guild.get_member(self.waiting[0])
+            if len(self.reaction) != 0 and self.lastSpeaker is not None:
+                user: Member = ctx.guild.get_member(self.reaction[0])
+                self.lastReaction = self.reaction[0]
+                await ctx.send(f"{user.mention} react on {ctx.guild.get_member(self.lastSpeaker).mention} speak !")
+                if self.strict:
+                    await user.edit(mute=False)
+            elif len(self.waiting) != 0:
+                user: Member = ctx.guild.get_member(self.waiting[0])
                 self.lastSpeaker = self.waiting[0]
+                self.lastReaction = None
                 await ctx.send(f"It's {user.mention} turn")
                 if self.strict:
                     await user.edit(mute=False)
             else:
                 self.lastSpeaker = None
+                self.lastReaction = None
                 await ctx.send("Nobody left !")
 
     @speak.group("help", pass_context=True)
@@ -85,6 +114,8 @@ class Speak(commands.Cog):
     async def speak_help(self, ctx: commands.Context):
         embed = Embed(title="Speak help")
         embed.add_field(name="speak", value="Join the waiting list", inline=False)
+        embed.add_field(name="speak react", value="Be the next to speak to react and debate with the current speaker",
+                        inline=False)
         embed.add_field(name="speak remove [@pepole, @...]",
                         value="Remove yourself or mentioned person from the waiting list", inline=False)
         embed.add_field(name="speak list", value="Show the waiting list", inline=False)
@@ -123,6 +154,8 @@ class Speak(commands.Cog):
         else:
             self.waiting = []
             self.lastSpeaker = None
+            self.reaction = []
+            self.lastReaction = None
             for client in speak_channel.members:
                 if client != ctx.author and not client.bot:
                     await client.edit(mute=False)
