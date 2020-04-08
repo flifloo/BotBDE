@@ -12,10 +12,6 @@ logger = logger.getChild(extension_name)
 class Extension(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.strict = False
-        self.voice_chan = None
-        self.waiting = []
-        self.lastSpeaker = None
 
     @commands.group("extension", pass_context=True)
     @commands.check(is_owner)
