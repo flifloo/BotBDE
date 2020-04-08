@@ -78,7 +78,22 @@ class Speak(commands.Cog):
 
     @speak.group("help", pass_context=True)
     async def speak_help(self, ctx: commands.Context):
-        await ctx.send("help")
+        embed = Embed(title="Speak help")
+        embed.add_field(name="speak", value="Join the waiting list", inline=False)
+        embed.add_field(name="speak remove [@pepole, @...]",
+                        value="Remove yourself or mentioned person from the waiting list", inline=False)
+        embed.add_field(name="speak list", value="Show the waiting list", inline=False)
+        embed.add_field(name="Speak setup [strict]",
+                        value="Set your current voice channel as the speak channel, you cant add the argument `strict` "
+                              "to mute everyone except you and the current speaker", inline=False)
+        embed.add_field(name="speak next",
+                        value="Give the turn to the next waiter, if strict mode is enabled the last person get muted "
+                              "and the next unmuted", inline=False)
+        embed.add_field(name="speak mute", value="Mute everyone on the speak channel except you", inline=False)
+        embed.add_field(name="speak unmute", value="Unmute everyone on the speak channel except you", inline=False)
+        embed.add_field(name="speak clear", value="Clear the speak by unmute everyone and forget the list & channel",
+                        inline=False)
+        await ctx.send(embed=embed)
 
     @speak.group("setup", pass_context=True)
     async def speak_setup(self, ctx: commands.Context, *args):
