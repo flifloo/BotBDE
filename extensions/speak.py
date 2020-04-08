@@ -1,5 +1,7 @@
 from discord.ext import commands
 from discord import Member, VoiceState, Embed
+from discord.ext.commands import CommandNotFound
+
 from bot_bde.logger import logger
 
 
@@ -134,8 +136,11 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
-        await ctx.send("An error occurred !")
-        raise error
+        if isinstance(error, CommandNotFound):
+            await ctx.message.add_reaction("\u2753")
+        else:
+            await ctx.send("An error occurred !")
+            raise error
 
 
 def setup(bot):
