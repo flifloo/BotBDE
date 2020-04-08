@@ -1,8 +1,8 @@
 from discord.ext import commands
-from discord import Embed, Message
+from discord import Embed, Message, User
 from threading import RLock
 from shelve import open
-from datetime import datetime, timedelta
+from datetime import timedelta
 from re import compile
 
 from bot_bde.logger import logger
@@ -16,6 +16,8 @@ XP = {"message": 2,
       "image": 15,
       "file": 20,
       "link": 10}
+LEVEL_RATIO = 350
+
 
 class Xp(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -62,7 +64,7 @@ class Xp(commands.Cog):
                                                         "file": 0,
                                                         "link": 0,
                                                         "last_message": message.created_at}
-                    if message.created_at - data[str(message.author.id)]["last_message"] >= timedelta(minutes=5):
+                    if message.created_at - data[str(message.author.id)]["last_message"] >= timedelta(minutes=2):
                         can_xp = True
                     data[str(message.author.id)]["message"] += 1
                     if can_xp:
@@ -82,6 +84,17 @@ class Xp(commands.Cog):
                                 if can_xp:
                                     data[str(message.author.id)]["xp"] += XP["file"]
                     data[str(message.author.id)]["last_message"] = message.created_at
+                    await self.level_up(message, data)
+
+    async def level_up(self, message: Message, data):
+        level_cap = data[str(message.author.id)]["level"] + 1 * LEVEL_RATIO
+        if data[str(message.author.id)]["xp"] >= level_cap:
+            data[str(message.author.id)]["xp"] = data[str(message.author.id)]["xp"] - level_cap
+            data[str(message.author.id)]["level"] += 1
+            embed = Embed(title="Level ! \U0001F389")
+            embed.add_field(name="You gain one level !",
+                            value=f"You reach level {data[str(message.author.id)]['level']}")
+            await message.channel.send(embed=embed)
 
 
 def setup(bot):
