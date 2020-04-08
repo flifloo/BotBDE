@@ -22,36 +22,23 @@ class Purge(commands.Cog):
         if ctx.invoked_subcommand is None:
             if ctx.message.author.guild_permissions.manage_messages:
                 self.purges[ctx.message.author.id] = ctx.message
-            await ctx.message.add_reaction("\U0001f44d")
+                await ctx.message.add_reaction("\U0001f44d")
 
-            await sleep(2*60)
-            try:
-                if self.purges[ctx.message.author.id] == ctx.message:
-                    await ctx.message.clear_reactions()
-                    del self.purges[ctx.message.author.id]
-            except:
-                pass
-
-        else:
-            await ctx.message.add_reaction("\u274C")
+                await sleep(2*60)
+                try:
+                    if self.purges[ctx.message.author.id] == ctx.message:
+                        await ctx.message.clear_reactions()
+                        del self.purges[ctx.message.author.id]
+                except:
+                    pass
+            else:
+                await ctx.message.add_reaction("\u274C")
 
     @purge.group("help", pass_context=True)
     @commands.guild_only()
     async def purge_help(self, ctx: commands.Context):
-        embed = Embed(title="Speak help")
-        embed.add_field(name="speak", value="Join the waiting list", inline=False)
-        embed.add_field(name="speak remove [@pepole, @...]",
-                        value="Remove yourself or mentioned person from the waiting list", inline=False)
-        embed.add_field(name="speak list", value="Show the waiting list", inline=False)
-        embed.add_field(name="Speak setup [strict]",
-                        value="Set your current voice channel as the speak channel, you cant add the argument `strict` "
-                              "to mute everyone except you and the current speaker", inline=False)
-        embed.add_field(name="speak next",
-                        value="Give the turn to the next waiter, if strict mode is enabled the last person get muted "
-                              "and the next unmuted", inline=False)
-        embed.add_field(name="speak mute", value="Mute everyone on the speak channel except you", inline=False)
-        embed.add_field(name="speak unmute", value="Unmute everyone on the speak channel except you", inline=False)
-        embed.add_field(name="speak clear", value="Clear the speak by unmute everyone and forget the list & channel",
+        embed = Embed(title="Purge help")
+        embed.add_field(name="purge", value="Purge all message delimited by the command to your next reaction",
                         inline=False)
         await ctx.send(embed=embed)
 

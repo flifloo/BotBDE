@@ -88,7 +88,7 @@ class Speak(commands.Cog):
         embed.add_field(name="speak remove [@pepole, @...]",
                         value="Remove yourself or mentioned person from the waiting list", inline=False)
         embed.add_field(name="speak list", value="Show the waiting list", inline=False)
-        embed.add_field(name="Speak setup [strict]",
+        embed.add_field(name="speak setup [strict]",
                         value="Set your current voice channel as the speak channel, you cant add the argument `strict` "
                               "to mute everyone except you and the current speaker", inline=False)
         embed.add_field(name="speak next",
