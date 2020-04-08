@@ -69,8 +69,12 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\u274C")
         else:
             embed = Embed(title="Waiting list")
+            if len(self.reaction) != 0:
+                for i, reaction in enumerate(self.reaction):
+                    embed.add_field(name=f"Reaction N°{i+1}", value=ctx.guild.get_member(reaction).display_name,
+                                    inline=False)
             for i, speaker in enumerate(self.waiting):
-                embed.add_field(name=f"N°{i+1}", value=ctx.guild.get_member(speaker).display_name, inline=True)
+                embed.add_field(name=f"N°{i+1}", value=ctx.guild.get_member(speaker).display_name, inline=False)
             await ctx.send(embed=embed)
 
     @speak.group("next", pass_context=True)
