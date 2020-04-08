@@ -55,13 +55,14 @@ class Extension(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
-        if isinstance(error, NotOwner):
-            await ctx.message.add_reaction("\u274C")
-        elif isinstance(error, CommandNotFound):
-            await ctx.message.add_reaction("\u2753")
-        else:
-            await ctx.send("An error occurred !")
-            raise error
+        if ctx.invoked_with == extension_name:
+            if isinstance(error, NotOwner):
+                await ctx.message.add_reaction("\u274C")
+            elif isinstance(error, CommandNotFound):
+                await ctx.message.add_reaction("\u2753")
+            else:
+                await ctx.send("An error occurred !")
+                raise error
 
 
 def setup(bot):
