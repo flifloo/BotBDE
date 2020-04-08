@@ -20,7 +20,7 @@ class Purge(commands.Cog):
     @commands.guild_only()
     async def purge(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            if ctx.message.author.guild_permissions.manage_messages:
+            if ctx.message.channel.permissions_for(ctx.author).manage_messages:
                 self.purges[ctx.message.author.id] = ctx.message
                 await ctx.message.add_reaction("\U0001f44d")
 
