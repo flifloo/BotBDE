@@ -18,6 +18,7 @@ class Speak(commands.Cog):
         self.lastSpeaker = None
 
     @commands.group("speak", pass_context=True)
+    @commands.guild_only()
     async def speak(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             if ctx.author.voice is None or ctx.author.voice.channel is None:
@@ -33,6 +34,7 @@ class Speak(commands.Cog):
                 await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("remove", pass_context=True)
+    @commands.guild_only()
     async def speak_remove(self, ctx: commands.Context):
         if len(ctx.message.mentions) != 0:
             if self.voice_chan and ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members:
@@ -48,6 +50,7 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\u274C")
 
     @speak.group("list", pass_context=True)
+    @commands.guild_only()
     async def speak_list(self, ctx: commands.Context):
         if ctx.author.voice.channel is None or not self.voice_chan:
             await ctx.message.add_reaction("\u274C")
@@ -58,6 +61,7 @@ class Speak(commands.Cog):
             await ctx.send(embed=embed)
 
     @speak.group("next", pass_context=True)
+    @commands.guild_only()
     async def speak_next(self, ctx: commands.Context):
         if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
@@ -77,6 +81,7 @@ class Speak(commands.Cog):
                 await ctx.send("Nobody left !")
 
     @speak.group("help", pass_context=True)
+    @commands.guild_only()
     async def speak_help(self, ctx: commands.Context):
         embed = Embed(title="Speak help")
         embed.add_field(name="speak", value="Join the waiting list", inline=False)
@@ -96,6 +101,7 @@ class Speak(commands.Cog):
         await ctx.send(embed=embed)
 
     @speak.group("setup", pass_context=True)
+    @commands.guild_only()
     async def speak_setup(self, ctx: commands.Context, *args):
         if not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
@@ -109,6 +115,7 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("clear", pass_context=True)
+    @commands.guild_only()
     async def speak_clear(self, ctx: commands.Context):
         if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
@@ -121,6 +128,7 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("mute", pass_context=True)
+    @commands.guild_only()
     async def speak_mute(self, ctx: commands.Context):
         if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members or not self.voice_chan:
             await ctx.message.add_reaction("\u274C")
@@ -131,6 +139,7 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("unmute", pass_context=True)
+    @commands.guild_only()
     async def speak_unmute(self, ctx: commands.Context):
         if not self.voice_chan or not ctx.guild.get_channel(self.voice_chan).permissions_for(ctx.author).mute_members or not self.voice_chan:
             await ctx.message.add_reaction("\u274C")
