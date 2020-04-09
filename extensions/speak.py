@@ -23,7 +23,7 @@ class Speak(commands.Cog):
     @commands.guild_only()
     async def speak(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            if ctx.args:
+            if ctx.subcommand_passed:
                 raise CommandNotFound
             elif ctx.author.voice is None or ctx.author.voice.channel is None:
                 await (await ctx.send("Your not in a voice channel !")).delete(delay=30)
