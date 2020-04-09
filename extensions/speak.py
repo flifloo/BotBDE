@@ -140,7 +140,9 @@ class Speak(commands.Cog):
             if len(args) != 0 and args[0] == "strict":
                 self.strict = True
                 for client in ctx.author.voice.channel.members:
-                    if client != ctx.author and not client.bot:
+                    if client != ctx.author and not client.bot and \
+                            not (self.lastSpeaker and client.id == self.lastSpeaker) and \
+                            not (self.reaction and client.id == self.lastReaction):
                         await client.edit(mute=True)
             self.voice_chan = ctx.author.voice.channel.id
             await ctx.message.add_reaction("\U0001f44d")
@@ -157,7 +159,7 @@ class Speak(commands.Cog):
             self.reaction = []
             self.lastReaction = None
             for client in speak_channel.members:
-                if client != ctx.author and not client.bot:
+                if not client.bot:
                     await client.edit(mute=False)
             self.strict = False
             self.voice_chan = None
@@ -189,10 +191,14 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
-        if (before is None or before.channel is None or before.channel.id != self.voice_chan) and\
-                (after is not None and after.channel is not None and after.channel.id == self.voice_chan and self.strict):
+        if self.voice_chan and self.strict and \
+                (before is None or before.channel is None or before.channel.id != self.voice_chan) and\
+                (after is not None and after.channel is not None and after.channel.id == self.voice_chan) and \
+                not (self.lastSpeaker and member.id == self.lastSpeaker) and \
+                not (self.reaction and member.id == self.lastReaction):
             await member.edit(mute=True)
-        elif (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and\
+        elif self.voice_chan and \
+                (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and\
                 (after is not None and after.channel is not None and after.channel.id != self.voice_chan):
             await member.edit(mute=False)
 
