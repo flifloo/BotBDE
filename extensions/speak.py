@@ -31,8 +31,7 @@ class Speak(commands.Cog):
     async def speak_help(self, ctx: commands.Context):
         embed = Embed(title="Speak help")
         embed.add_field(name="speak setup [strict]",
-                        value="Set your current voice channel as the speak channel, you cant add the argument `strict` "
-                              "to mute everyone except you and the current speaker", inline=False)
+                        value="Set your current voice channel as the speak channel", inline=False)
         embed.add_field(name="speak mute", value="Mute everyone on the speak channel except you", inline=False)
         embed.add_field(name="speak unmute", value="Unmute everyone on the speak channel except you", inline=False)
         await ctx.send(embed=embed)
@@ -210,9 +209,9 @@ class Speak(commands.Cog):
     async def on_reaction_remove(self, reaction: Reaction, user: Member):
         if not user.bot:
             if reaction.message.id == self.voice_message.id:
-                if str(reaction.emoji) == "\U0001f5e3":
+                if str(reaction.emoji) == "\U0001f5e3" and user.id in self.waiting and user.id != self.lastSpeaker:
                     self.waiting.remove(user.id)
-                elif str(reaction.emoji) == "\u2757":
+                elif str(reaction.emoji) == "\u2757" and user.id in self.reaction and user.id != self.lastReaction:
                     self.reaction.remove(user.id)
                 await self.update_list(reaction.message.channel.guild)
 
