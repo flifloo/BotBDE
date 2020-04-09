@@ -23,7 +23,9 @@ class Speak(commands.Cog):
     @commands.guild_only()
     async def speak(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            if ctx.author.voice is None or ctx.author.voice.channel is None:
+            if ctx.args:
+                raise CommandNotFound
+            elif ctx.author.voice is None or ctx.author.voice.channel is None:
                 await ctx.send("Your not in a voice channel !")
             elif self.voice_chan is None:
                 await ctx.send("Voice channel not set !")
