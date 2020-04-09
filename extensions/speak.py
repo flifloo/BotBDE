@@ -183,7 +183,7 @@ class Speak(commands.Cog):
             await ctx.message.add_reaction("\u274C")
         else:
             for client in ctx.author.voice.channel.members:
-                if client != ctx.author and not client.bot:
+                if not client.bot:
                     await client.edit(mute=False)
             await ctx.message.add_reaction("\U0001f44d")
 
