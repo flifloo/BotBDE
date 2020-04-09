@@ -139,13 +139,16 @@ class Speak(commands.Cog):
         if not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
             await ctx.message.add_reaction("\u274C")
         else:
-            if len(args) != 0 and args[0] == "strict":
-                self.strict = True
-                for client in ctx.author.voice.channel.members:
-                    if client != ctx.author and not client.bot and \
-                            not (self.lastSpeaker and client.id == self.lastSpeaker) and \
-                            not (self.reaction and client.id == self.lastReaction):
-                        await client.edit(mute=True)
+            if len(args) != 0:
+                if args[0] == "strict":
+                    self.strict = True
+                    for client in ctx.author.voice.channel.members:
+                        if client != ctx.author and not client.bot and \
+                                not (self.lastSpeaker and client.id == self.lastSpeaker) and \
+                                not (self.reaction and client.id == self.lastReaction):
+                            await client.edit(mute=True)
+                else:
+                    raise CommandNotFound
             self.voice_chan = ctx.author.voice.channel.id
             await ctx.message.add_reaction("\U0001f44d")
 
@@ -206,7 +209,8 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name:
+        if ctx.invoked_with == extension_name or \
+                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
             if isinstance(error, CommandNotFound):
                 await ctx.message.add_reaction("\u2753")
             else:
