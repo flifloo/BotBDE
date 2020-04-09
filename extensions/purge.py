@@ -58,7 +58,8 @@ class Purge(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name:
+        if ctx.invoked_with == extension_name or \
+                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
             if isinstance(error, CommandNotFound):
                 await ctx.message.add_reaction("\u2753")
             else:
