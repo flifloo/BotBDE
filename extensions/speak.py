@@ -26,11 +26,11 @@ class Speak(commands.Cog):
             if ctx.args:
                 raise CommandNotFound
             elif ctx.author.voice is None or ctx.author.voice.channel is None:
-                await ctx.send("Your not in a voice channel !")
+                await (await ctx.send("Your not in a voice channel !")).delete(delay=30)
             elif self.voice_chan is None:
-                await ctx.send("Voice channel not set !")
+                await (await ctx.send("Voice channel not set !")).delete(delay=30)
             elif ctx.author.voice.channel.id != self.voice_chan:
-                await ctx.send("Your not in the good voice channel !")
+                await (await ctx.send("Your not in the good voice channel !")).delete(delay=30)
             elif ctx.author.id in self.waiting:
                 await ctx.message.add_reaction("\u274C")
             else:
@@ -77,7 +77,7 @@ class Speak(commands.Cog):
                                     inline=False)
             for i, speaker in enumerate(self.waiting):
                 embed.add_field(name=f"N°{i+1}", value=ctx.guild.get_member(speaker).display_name, inline=False)
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, delete_after=60)
 
     @speak.group("next", pass_context=True)
     @commands.guild_only()
@@ -207,12 +207,16 @@ class Speak(commands.Cog):
                 (after is not None and after.channel is not None and after.channel.id != self.voice_chan):
             await member.edit(mute=False)
 
+    async def cog_after_invoke(self, ctx: commands.Context):
+        await ctx.message.delete(delay=30)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
         if ctx.invoked_with == extension_name or \
                 (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
             if isinstance(error, CommandNotFound):
                 await ctx.message.add_reaction("\u2753")
+                await ctx.message.delete(delay=30)
             else:
                 await ctx.send("An error occurred !")
                 raise error
