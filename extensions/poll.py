@@ -72,10 +72,11 @@ class Poll(commands.Cog):
 
     async def close_poll(self, id: int):
         message = await self.polls[id]["message"].channel.fetch_message(id)
+        reactions = message.reactions
+        await message.clear_reactions()
         embed = message.embeds[0]
         for i, f in enumerate(embed.fields):
-            embed.set_field_at(i, name=f"{f.name} - {message.reactions[i].count-1}", value=f.value, inline=False)
-        await message.clear_reactions()
+            embed.set_field_at(i, name=f"{f.name} - {reactions[i].count-1}", value=f.value, inline=False)
         await message.edit(embed=embed)
 
     @commands.Cog.listener()
