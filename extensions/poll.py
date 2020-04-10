@@ -78,6 +78,7 @@ class Poll(commands.Cog):
         for i, f in enumerate(embed.fields):
             embed.set_field_at(i, name=f"{f.name} - {reactions[i].count-1}", value=f.value, inline=False)
         await message.edit(embed=embed)
+        del self.polls[id]
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
