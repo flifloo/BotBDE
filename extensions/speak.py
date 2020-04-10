@@ -96,7 +96,7 @@ class Speak(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, user: Member):
         if not user.bot:
-            if reaction.message.id == self.voice_message.id:
+            if self.voice_message and reaction.message.id == self.voice_message.id:
                 if str(reaction.emoji) == "\U0001f5e3":
                     await self.speak_action(reaction, user)
                 elif str(reaction.emoji) == "\u2757":
@@ -215,7 +215,7 @@ class Speak(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction: Reaction, user: Member):
         if not user.bot:
-            if reaction.message.id == self.voice_message.id:
+            if self.voice_message and reaction.message.id == self.voice_message.id:
                 if str(reaction.emoji) == "\U0001f5e3" and user.id in self.waiting and user.id != self.last_speaker:
                     self.waiting.remove(user.id)
                 elif str(reaction.emoji) == "\u2757" and user.id in self.reaction and user.id != self.last_reaction:
