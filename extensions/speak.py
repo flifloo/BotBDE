@@ -208,7 +208,9 @@ class Speak(commands.Cog):
             self.voice_chan = None
             if self.last_message:
                 await self.last_message.delete()
+                self.last_message = None
             await self.voice_message.delete()
+            self.voice_message = None
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction: Reaction, user: Member):
@@ -221,21 +223,22 @@ class Speak(commands.Cog):
                 await self.update_list(reaction.message.channel.guild)
 
     async def update_list(self, guild: Guild):
-        persons = []
-        if len(self.reaction) != 0:
-            for i, reaction in enumerate(self.reaction):
-                persons.append(f"Reaction N°{i+1}: {guild.get_member(reaction).display_name}")
-        for i, speaker in enumerate(self.waiting):
-            persons.append(f"N°{i+1}: {guild.get_member(speaker).display_name}")
-        if len(persons) == 0:
-            persons = "Nobody"
-        else:
-            persons = "\n".join(persons)
-        embed = self.voice_message.embeds[0]
-        field = embed.fields[0]
-        embed.remove_field(0)
-        embed.insert_field_at(0, name=field.name, value=persons, inline=True)
-        await self.voice_message.edit(embed=embed)
+        if self.voice_message:
+            persons = []
+            if len(self.reaction) != 0:
+                for i, reaction in enumerate(self.reaction):
+                    persons.append(f"Reaction N°{i+1}: {guild.get_member(reaction).display_name}")
+            for i, speaker in enumerate(self.waiting):
+                persons.append(f"N°{i+1}: {guild.get_member(speaker).display_name}")
+            if len(persons) == 0:
+                persons = "Nobody"
+            else:
+                persons = "\n".join(persons)
+            embed = self.voice_message.embeds[0]
+            field = embed.fields[0]
+            embed.remove_field(0)
+            embed.insert_field_at(0, name=field.name, value=persons, inline=True)
+            await self.voice_message.edit(embed=embed)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
