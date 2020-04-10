@@ -47,40 +47,34 @@ class Speak(commands.Cog):
             embed = Embed(title="Speak \U0001f508")
             embed.add_field(name="Waiting list \u23f3", value="Nobody", inline=False)
             embed.add_field(name="Reactions",
-                            value="\U0001f5e3 speak !\n"
-                                  "\u2757 react to speaker\n"
+                            value="\U0001f5e3 Speak !\n"
+                                  "\u2757 React to speaker\n"
                                   "\u27A1 Next\n"
                                   "\U0001F513 Strict\n"
-                                  "\u274C clear the speak\n"
+                                  "\U0001F507 Mute\n"
+                                  "\U0001F50A Unmute\n"
+                                  "\u274C Clear the speak\n"
                                   "Remove your reaction to remove from list",
                             inline=False)
             self.voice_message = await ctx.send(embed=embed)
-            for reaction in ["\U0001f5e3", "\u2757", "\u27A1", "\U0001F512", "\u274C"]:
+            for reaction in ["\U0001f5e3", "\u2757", "\u27A1", "\U0001F512", "\U0001F507", "\U0001F50A", "\u274C"]:
                 await self.voice_message.add_reaction(reaction)
             self.voice_message = await self.voice_message.channel.fetch_message(self.voice_message.id)
 
     @speak.group("mute", pass_context=True)
     @commands.guild_only()
     async def speak_mute(self, ctx: commands.Context):
-        if ctx.author.voice is None or ctx.author.voice.channel is None or \
-                not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
+        if not self.mute(True, ctx.author):
             await ctx.message.add_reaction("\u274C")
         else:
-            for client in ctx.author.voice.channel.members:
-                if client != ctx.author and not client.bot:
-                    await client.edit(mute=True)
             await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("unmute", pass_context=True)
     @commands.guild_only()
     async def speak_unmute(self, ctx: commands.Context):
-        if ctx.author.voice is None or ctx.author.voice.channel is None or \
-                not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
+        if not self.mute(False, ctx.author):
             await ctx.message.add_reaction("\u274C")
         else:
-            for client in ctx.author.voice.channel.members:
-                if not client.bot:
-                    await client.edit(mute=False)
             await ctx.message.add_reaction("\U0001f44d")
 
     @commands.Cog.listener()
@@ -111,6 +105,12 @@ class Speak(commands.Cog):
                     await self.speak_next_action(reaction, user)
                 elif str(reaction.emoji) in ["\U0001F512", "\U0001F513"]:
                     await self.speak_strict_action(reaction, user)
+                elif str(reaction.emoji) == "\U0001F507":
+                    await self.mute(True, user)
+                    await reaction.remove(user)
+                elif str(reaction.emoji) == "\U0001F50A":
+                    await self.mute(False, user)
+                    await reaction.remove(user)
                 elif str(reaction.emoji) == "\u274C":
                     await self.speak_clear_action(reaction, user)
                 else:
@@ -239,6 +239,16 @@ class Speak(commands.Cog):
             embed.remove_field(0)
             embed.insert_field_at(0, name=field.name, value=persons, inline=True)
             await self.voice_message.edit(embed=embed)
+
+    async def mute(self, state: bool, user: Member) -> bool:
+        if user.voice is None or user.voice.channel is None or \
+                not user.voice.channel.permissions_for(user).mute_members:
+            return False
+        else:
+            for client in user.voice.channel.members:
+                if not (client == user and state) and not client.bot:
+                    await client.edit(mute=state)
+            return True
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
