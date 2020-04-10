@@ -50,7 +50,7 @@ class Speak(commands.Cog):
                             value="\U0001f5e3 speak !\n"
                                   "\u2757 react to speaker\n"
                                   "\u27A1 Next\n"
-                                  "\U0001F512 Strict\n"
+                                  "\U0001F513 Strict\n"
                                   "\u274C clear the speak\n"
                                   "Remove your reaction to remove from list",
                             inline=False)
@@ -176,7 +176,7 @@ class Speak(commands.Cog):
                 not reaction.message.guild.get_channel(self.voice_chan).permissions_for(user).mute_members:
             await reaction.remove(user)
         else:
-            replace = ["\U0001F512", "\U0001F513"] if not self.strict else ["\U0001F513", "\U0001F512"]
+            replace = ["\U0001F513", "\U0001F512"] if not self.strict else ["\U0001F512", "\U0001F513"]
             self.strict = not self.strict
             if self.strict:
                 for client in user.voice.channel.members:
