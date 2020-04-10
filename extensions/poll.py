@@ -23,7 +23,9 @@ class Poll(commands.Cog):
     @commands.group("poll", pass_context=True)
     @commands.guild_only()
     async def poll(self, ctx: commands.Context, name: str, *choices):
-        if ctx.invoked_subcommand is None:
+        if name == "help":
+            await ctx.invoke(self.poll_help)
+        else:
             multi = False
             if choices and choices[0] in ["multi", "m"]:
                 multi = True
@@ -46,10 +48,12 @@ class Poll(commands.Cog):
 
     @poll.group("help", pass_context=True)
     @commands.guild_only()
-    async def speak_help(self, ctx: commands.Context):
+    async def poll_help(self, ctx: commands.Context):
         embed = Embed(title="poll help")
-        embed.add_field(name="poll ",
-                        value="...", inline=False)
+        embed.add_field(name="poll <name> [multi|m] <Choice N°1> <Choice N°2> ... <Choice N°11>",
+                        value="Create a poll, the argument multi (or m) after the name allow multiple response\n"
+                              "User the \U0001F5D1 to close the poll",
+                        inline=False)
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
