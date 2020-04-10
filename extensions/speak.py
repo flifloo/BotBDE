@@ -19,6 +19,7 @@ class Speak(commands.Cog):
         self.reaction = []
         self.lastReaction = None
         self.voice_message = None
+        self.last_message = None
 
     @commands.group("speak", pass_context=True)
     @commands.guild_only()
@@ -137,6 +138,8 @@ class Speak(commands.Cog):
         await reaction.remove(user)
         if self.voice_chan and \
                 reaction.message.guild.get_channel(self.voice_chan).permissions_for(user).mute_members:
+            if self.last_message:
+                await self.last_message.delete()
             if self.lastReaction:
                 user: Member = reaction.message.guild.get_member(self.lastReaction)
                 self.reaction.remove(self.lastReaction)
@@ -152,7 +155,7 @@ class Speak(commands.Cog):
             if len(self.reaction) != 0 and self.lastSpeaker is not None:
                 user: Member = reaction.message.guild.get_member(self.reaction[0])
                 self.lastReaction = self.reaction[0]
-                await reaction.message.channel.send(
+                self.last_message = await reaction.message.channel.send(
                     f"{user.mention} react on {reaction.message.guild.get_member(self.lastSpeaker).mention} speak !")
                 if self.strict:
                     await user.edit(mute=False)
@@ -160,13 +163,13 @@ class Speak(commands.Cog):
                 user: Member = reaction.message.guild.get_member(self.waiting[0])
                 self.lastSpeaker = self.waiting[0]
                 self.lastReaction = None
-                await reaction.message.channel.send(f"It's {user.mention} turn")
+                self.last_message = await reaction.message.channel.send(f"It's {user.mention} turn")
                 if self.strict:
                     await user.edit(mute=False)
             else:
                 self.lastSpeaker = None
                 self.lastReaction = None
-                await reaction.message.channel.send("Nobody left !")
+                self.last_message = await reaction.message.channel.send("Nobody left !")
 
     async def speak_strict_action(self, reaction: Reaction, user: Member):
         if not self.voice_chan or \
@@ -203,6 +206,8 @@ class Speak(commands.Cog):
                     await client.edit(mute=False)
             self.strict = False
             self.voice_chan = None
+            if self.last_message:
+                await self.last_message.delete()
             await self.voice_message.delete()
 
     @commands.Cog.listener()
