@@ -15,9 +15,9 @@ class Speak(commands.Cog):
         self.strict = False
         self.voice_chan = None
         self.waiting = []
-        self.lastSpeaker = None
+        self.last_speaker = None
         self.reaction = []
-        self.lastReaction = None
+        self.last_reaction = None
         self.voice_message = None
         self.last_message = None
 
@@ -88,8 +88,8 @@ class Speak(commands.Cog):
         if self.voice_chan and self.strict and \
                 (before is None or before.channel is None or before.channel.id != self.voice_chan) and\
                 (after is not None and after.channel is not None and after.channel.id == self.voice_chan) and \
-                not (self.lastSpeaker and member.id == self.lastSpeaker) and \
-                not (self.reaction and member.id == self.lastReaction):
+                not (self.last_speaker and member.id == self.last_speaker) and \
+                not (self.reaction and member.id == self.last_reaction):
             await member.edit(mute=True)
         elif self.voice_chan and \
                 (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and\
@@ -129,7 +129,7 @@ class Speak(commands.Cog):
     async def speak_react_action(self, reaction: Reaction, user: Member):
         if user.voice is None or user.voice.channel is None or self.voice_chan is None or \
                 user.voice.channel.id != self.voice_chan or user.id in self.reaction or \
-                self.lastSpeaker is None or self.lastSpeaker == user.id:
+                self.last_speaker is None or self.last_speaker == user.id:
             await reaction.remove(user)
         else:
             self.reaction.append(user.id)
@@ -140,35 +140,35 @@ class Speak(commands.Cog):
                 reaction.message.guild.get_channel(self.voice_chan).permissions_for(user).mute_members:
             if self.last_message:
                 await self.last_message.delete()
-            if self.lastReaction:
-                user: Member = reaction.message.guild.get_member(self.lastReaction)
-                self.reaction.remove(self.lastReaction)
+            if self.last_reaction:
+                user: Member = reaction.message.guild.get_member(self.last_reaction)
+                self.reaction.remove(self.last_reaction)
                 if self.strict:
                     await user.edit(mute=True)
                 await self.voice_message.reactions[1].remove(user)
-            if self.lastSpeaker and len(self.reaction) == 0:
-                user: Member = reaction.message.guild.get_member(self.lastSpeaker)
-                self.waiting.remove(self.lastSpeaker)
+            if self.last_speaker and len(self.reaction) == 0:
+                user: Member = reaction.message.guild.get_member(self.last_speaker)
+                self.waiting.remove(self.last_speaker)
                 if self.strict:
                     await user.edit(mute=True)
                 await self.voice_message.reactions[0].remove(user)
-            if len(self.reaction) != 0 and self.lastSpeaker is not None:
+            if len(self.reaction) != 0 and self.last_speaker is not None:
                 user: Member = reaction.message.guild.get_member(self.reaction[0])
-                self.lastReaction = self.reaction[0]
+                self.last_reaction = self.reaction[0]
                 self.last_message = await reaction.message.channel.send(
-                    f"{user.mention} react on {reaction.message.guild.get_member(self.lastSpeaker).mention} speak !")
+                    f"{user.mention} react on {reaction.message.guild.get_member(self.last_speaker).mention} speak !")
                 if self.strict:
                     await user.edit(mute=False)
             elif len(self.waiting) != 0:
                 user: Member = reaction.message.guild.get_member(self.waiting[0])
-                self.lastSpeaker = self.waiting[0]
-                self.lastReaction = None
+                self.last_speaker = self.waiting[0]
+                self.last_reaction = None
                 self.last_message = await reaction.message.channel.send(f"It's {user.mention} turn")
                 if self.strict:
                     await user.edit(mute=False)
             else:
-                self.lastSpeaker = None
-                self.lastReaction = None
+                self.last_speaker = None
+                self.last_reaction = None
                 self.last_message = await reaction.message.channel.send("Nobody left !")
 
     async def speak_strict_action(self, reaction: Reaction, user: Member):
@@ -181,8 +181,8 @@ class Speak(commands.Cog):
             if self.strict:
                 for client in user.voice.channel.members:
                     if client != user and not client.bot and \
-                            not (self.lastSpeaker and client.id == self.lastSpeaker) and \
-                            not (self.reaction and client.id == self.lastReaction):
+                            not (self.last_speaker and client.id == self.last_speaker) and \
+                            not (self.reaction and client.id == self.last_reaction):
                         await client.edit(mute=True)
             embed = self.voice_message.embeds[0]
             field = embed.fields[1]
@@ -198,9 +198,9 @@ class Speak(commands.Cog):
             await reaction.remove(user)
         else:
             self.waiting = []
-            self.lastSpeaker = None
+            self.last_speaker = None
             self.reaction = []
-            self.lastReaction = None
+            self.last_reaction = None
             for client in speak_channel.members:
                 if not client.bot:
                     await client.edit(mute=False)
@@ -216,9 +216,9 @@ class Speak(commands.Cog):
     async def on_reaction_remove(self, reaction: Reaction, user: Member):
         if not user.bot:
             if reaction.message.id == self.voice_message.id:
-                if str(reaction.emoji) == "\U0001f5e3" and user.id in self.waiting and user.id != self.lastSpeaker:
+                if str(reaction.emoji) == "\U0001f5e3" and user.id in self.waiting and user.id != self.last_speaker:
                     self.waiting.remove(user.id)
-                elif str(reaction.emoji) == "\u2757" and user.id in self.reaction and user.id != self.lastReaction:
+                elif str(reaction.emoji) == "\u2757" and user.id in self.reaction and user.id != self.last_reaction:
                     self.reaction.remove(user.id)
                 await self.update_list(reaction.message.channel.guild)
 
