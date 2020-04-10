@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from discord.ext import commands
 from discord import Member, Embed, Reaction
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
@@ -29,7 +31,9 @@ class Poll(commands.Cog):
             if len(choices) == 0 or len(choices) > 11:
                 await ctx.message.add_reaction("\u274C")
             else:
-                embed = Embed(title=name)
+                embed = Embed(title=f"Poll: {name}")
+                embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+                embed.set_footer(text=f"Created: {ctx.message.created_at.strftime('%d/%m/%Y %H:%M')}")
                 for i, choice in enumerate(choices):
                     embed.add_field(name=REACTIONS[i], value=choice, inline=False)
                 message = await ctx.send(embed=embed)
@@ -71,12 +75,14 @@ class Poll(commands.Cog):
                             break
 
     async def close_poll(self, id: int):
+        time = datetime.now()
         message = await self.polls[id]["message"].channel.fetch_message(id)
         reactions = message.reactions
         await message.clear_reactions()
         embed = message.embeds[0]
         for i, f in enumerate(embed.fields):
             embed.set_field_at(i, name=f"{f.name} - {reactions[i].count-1}", value=f.value, inline=False)
+        embed.set_footer(text=embed.footer.text + "\n" + f"Close: {time.strftime('%d/%m/%Y %H:%M')}")
         await message.edit(embed=embed)
         del self.polls[id]
 
