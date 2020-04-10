@@ -38,6 +38,7 @@ class Poll(commands.Cog):
                     await message.add_reaction(reaction)
                 message = await message.channel.fetch_message(message.id)
                 self.polls[message.id] = {"multi": multi, "message": message, "author": ctx.message.author.id}
+                await ctx.message.delete()
 
     @poll.group("help", pass_context=True)
     @commands.guild_only()
