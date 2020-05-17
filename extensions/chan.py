@@ -25,18 +25,20 @@ class Chan(commands.Cog):
             await ctx.invoke(self.chan_help)
         else:
             chan: TextChannel = await ctx.guild.create_text_channel(name)
-            if len(ctx.message.role_mentions) != 0:
+            if len(ctx.message.role_mentions) != 0 or len(ctx.message.mentions) != 0:
                 await chan.set_permissions(ctx.guild.default_role, read_messages=False, send_messages=False)
                 for r in ctx.message.role_mentions:
                     await chan.set_permissions(r, read_messages=True, send_messages=True)
+                for m in ctx.message.mentions:
+                    await chan.set_permissions(m, read_messages=True, send_messages=True)
 
     @chan.group("help", pass_context=True)
     @commands.guild_only()
     async def chan_help(self, ctx: commands.Context):
         embed = Embed(title="chan help")
-        embed.add_field(name="chan <name> [@role]",
-                        value="Create a new chan, the roles mentioned will be the only one permitted to read and write "
-                              "in the chan\n",
+        embed.add_field(name="chan <name> [@role|@user]",
+                        value="Create a new chan, the roles and/or users mentioned will be the only one permitted to "
+                              "read and write in the chan\n",
                         inline=False)
         await ctx.send(embed=embed)
 
