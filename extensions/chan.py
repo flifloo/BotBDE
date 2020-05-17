@@ -7,10 +7,6 @@ from bot_bde.logger import logger
 
 extension_name = "chan"
 logger = logger.getChild(extension_name)
-REACTIONS = []
-for i in range(10):
-    REACTIONS.append(str(i) + "\ufe0f\u20E3")
-REACTIONS.append("\U0001F51F")
 
 
 def check_editable_chan():
@@ -23,6 +19,16 @@ def check_editable_chan():
             return False
         else:
             return True
+
+    return commands.check(predicate)
+
+
+def check_permissions():
+    async def predicate(ctx: commands.Context):
+        if len(ctx.message.channel_mentions) == 1:
+            return ctx.message.channel_mentions[0].permissions_for(ctx.author).manage_channels
+        else:
+            return ctx.author.guild_permissions.manage_channels
 
     return commands.check(predicate)
 
@@ -49,6 +55,7 @@ class Chan(commands.Cog):
 
     @chan.group("create", pass_context=True)
     @commands.guild_only()
+    @check_permissions()
     async def chan_create(self, ctx: commands.Context, name: str):
         chan: TextChannel = await ctx.guild.create_text_channel(name)
         if len(ctx.message.role_mentions) != 0 or len(ctx.message.mentions) != 0:
@@ -61,6 +68,7 @@ class Chan(commands.Cog):
     @chan.group("deny", pass_context=True)
     @commands.guild_only()
     @check_editable_chan()
+    @check_permissions()
     async def chan_deny(self, ctx: commands.Context):
         for r in ctx.message.role_mentions:
             await ctx.message.channel_mentions[0].set_permissions(r,
@@ -74,6 +82,7 @@ class Chan(commands.Cog):
     @chan.group("allow", pass_context=True)
     @commands.guild_only()
     @check_editable_chan()
+    @check_permissions()
     async def allow_deny(self, ctx: commands.Context):
         for r in ctx.message.role_mentions:
             await ctx.message.channel_mentions[0].set_permissions(r,
