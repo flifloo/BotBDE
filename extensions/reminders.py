@@ -1,4 +1,3 @@
-import asyncio
 import re
 from datetime import datetime, timedelta
 
@@ -40,6 +39,8 @@ class Reminders(commands.Cog):
         embed.add_field(name="speak add <message> <time>", value="Add a reminder to your reminders list\n"
                                                                  "Time: ?D?H?M?S", inline=False)
         embed.add_field(name="speak list", value="Show your tasks list", inline=False)
+        embed.add_field(name="speak remove [N°]", value="Show your tasks list with if no id given\n"
+                                                        "Remove the task withe the matching id", inline=False)
         await ctx.send(embed=embed)
 
     @reminder.group("add", pass_context=True)
@@ -64,10 +65,21 @@ class Reminders(commands.Cog):
     @reminder.group("list", pass_context=True)
     async def reminder_list(self, ctx: commands.Context):
         embed = Embed(title="Tasks list")
-        for i in self.tasks:
-            if i["user"] == ctx.author.id:
-                embed.add_field(name=i["date"],value=i["message"], inline=False)
+        for i, t in enumerate(self.tasks):
+            if t["user"] == ctx.author.id:
+                embed.add_field(name=t["date"], value=f"N°{i} | {t['message']}", inline=False)
         await ctx.send(embed=embed)
+
+    @reminder.group("remove", pass_context=True)
+    async def reminder_remove(self, ctx: commands.Context, n: int = None):
+        tasks =list(filter(lambda t: t["user"] == ctx.author.id, self.tasks))
+        if n is None:
+            await ctx.invoke(self.reminder_list)
+        elif n >= len(tasks):
+            raise BadArgument()
+        else:
+            del self.tasks[n]
+            await ctx.message.add_reaction("\U0001f44d")
 
     @tasks.loop(minutes=1)
     async def reminders_loop(self):
@@ -87,8 +99,8 @@ class Reminders(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name or \
-                (ctx.command.root_parent is not None and ctx.command.root_parent.name == "reminder"):
+        if ctx.invoked_with == "reminder" or \
+                (ctx.command.root_parent and ctx.command.root_parent.name == "reminder"):
             if isinstance(error, CommandNotFound)\
                     or isinstance(error, BadArgument)\
                     or isinstance(error, MissingRequiredArgument):
