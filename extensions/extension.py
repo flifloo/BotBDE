@@ -27,7 +27,7 @@ class Extension(commands.Cog):
     async def extension_load(self, ctx: commands.Context, name: str):
         try:
             self.bot.load_extension(name)
-        except Extension as e:
+        except Exception as e:
             await ctx.message.add_reaction("\u26a0")
         else:
             await ctx.message.add_reaction("\U0001f44d")
@@ -37,7 +37,7 @@ class Extension(commands.Cog):
     async def extension_unload(self, ctx: commands.Context, name: str):
         try:
             self.bot.unload_extension(name)
-        except Extension as e:
+        except Exception as e:
             await ctx.message.add_reaction("\u26a0")
         else:
             await ctx.message.add_reaction("\U0001f44d")
@@ -48,7 +48,7 @@ class Extension(commands.Cog):
         try:
             self.bot.unload_extension(name)
             self.bot.load_extension(name)
-        except Extension as e:
+        except Exception as e:
             await ctx.message.add_reaction("\u26a0")
         else:
             await ctx.message.add_reaction("\U0001f44d")
