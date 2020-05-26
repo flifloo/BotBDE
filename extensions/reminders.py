@@ -1,3 +1,4 @@
+import asyncio
 import re
 from datetime import datetime, timedelta
 
@@ -11,10 +12,6 @@ from bot_bde.logger import logger
 
 extension_name = "reminders"
 logger = logger.getChild(extension_name)
-
-
-async def reminder_exec(coro):
-    await coro
 
 
 def time_pars(s: str) -> timedelta:
@@ -33,26 +30,28 @@ class Reminders(commands.Cog):
         self.tasks = []
 
     @commands.group("reminder", pass_context=True)
-    @commands.guild_only()
     async def reminder(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             raise CommandNotFound()
 
     @reminder.group("help", pass_context=True)
-    @commands.guild_only()
     async def reminder_help(self, ctx: commands.Context):
         embed = Embed(title="Reminder help")
         embed.add_field(name="speak add <message> <time>", value="Add a reminder to your reminders list\n"
                                                                  "Time: ?D?H?M?S", inline=False)
+        embed.add_field(name="speak list", value="Show your tasks list", inline=False)
         await ctx.send(embed=embed)
 
     @reminder.group("add", pass_context=True)
-    @commands.guild_only()
     async def reminder_add(self, ctx: commands.Context, message: str, time: str):
         time = time_pars(time)
+        now = datetime.now()
         self.tasks.append({
-            "date": datetime.now() + time,
-            "coro": ctx.send(ctx.author.mention + " reminder !\n" + message)
+            "date": now + time,
+            "create": now,
+            "user": ctx.author.id,
+            "message": message,
+            "channel": ctx.channel.id,
         })
 
         hours, seconds = divmod(time.seconds, 3600)
@@ -62,13 +61,29 @@ class Reminders(commands.Cog):
             if hours > 0 else f"{minutes}m {seconds}s"
             if minutes > 0 else f"{seconds}s"} !""")
 
+    @reminder.group("list", pass_context=True)
+    async def reminder_list(self, ctx: commands.Context):
+        embed = Embed(title="Tasks list")
+        for i in self.tasks:
+            if i["user"] == ctx.author.id:
+                embed.add_field(name=i["date"],value=i["message"], inline=False)
+        await ctx.send(embed=embed)
+
     @tasks.loop(minutes=1)
     async def reminders_loop(self):
-        print("loop")
-        for i, t in enumerate(self.tasks):
+        trash = []
+        for t in self.tasks:
             if t["date"] <= datetime.now():
-                self.bot.loop.create_task(reminder_exec(t["coro"]))
-                del self.tasks[i]
+                self.bot.loop.create_task(self.reminder_exec(t))
+                trash.append(t)
+
+        for t in trash:
+            del self.tasks[self.tasks.index(t)]
+
+    async def reminder_exec(self, task: dict):
+        embed = Embed(title="You have a reminder !")
+        embed.add_field(name=task["date"], value=task["message"])
+        await self.bot.get_channel(task["channel"]).send(f"<@{task['user']}>", embed=embed)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
