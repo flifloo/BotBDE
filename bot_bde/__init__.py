@@ -1,4 +1,5 @@
 from bot_bde.config import config
+import db
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix=config.get("prefix"))
