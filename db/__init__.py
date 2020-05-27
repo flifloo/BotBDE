@@ -5,5 +5,5 @@ from sqlalchemy.ext.declarative import declarative_base
 engine = create_engine(config.get("db"))
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
-#from db.foo import Barr
+from db.Task import Task
 Base.metadata.create_all(engine)
