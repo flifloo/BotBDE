@@ -9,3 +9,5 @@ multidict==4.7.5
 websockets==8.1
 yarl==1.4.2
 SQLAlchemy~=1.3.17
+ics~=0.7
+requests~=2.23.0
