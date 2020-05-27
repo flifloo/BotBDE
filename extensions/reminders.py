@@ -15,7 +15,8 @@ logger = logger.getChild(extension_name)
 
 
 def time_pars(s: str) -> timedelta:
-    match = re.fullmatch(r"(?:([0-9]+)W)*(?:([0-9]+)D)*(?:([0-9]+)H)*(?:([0-9]+)M)*(?:([0-9]+)S)*", s.upper().replace(" ", "").strip())
+    match = re.fullmatch(r"(?:([0-9]+)W)*(?:([0-9]+)D)*(?:([0-9]+)H)*(?:([0-9]+)M)*(?:([0-9]+)S)*",
+                         s.upper().replace(" ", "").strip())
     if match:
         w, d, h, m, s = match.groups()
         if any([w, d, h, m, s]):
@@ -96,8 +97,10 @@ class Reminders(commands.Cog):
 
     async def reminder_exec(self, task: db.Task):
         embed = Embed(title="You have a reminder !")
+        user = self.bot.get_user(task.user)
+        embed.set_author(name=f"{user.name}#{user.discriminator}", icon_url=user.avatar_url)
         embed.add_field(name=str(task.date), value=task.message)
-        await self.bot.get_channel(task.channel).send(f"<@{task.user}>", embed=embed)
+        await (await self.bot.get_channel(task.channel).send(f"{user.mention}", embed=embed)).edit(content="")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
@@ -128,6 +131,7 @@ def setup(bot):
 def teardown(bot):
     logger.info(f"Unloading...")
     try:
+        bot.get_cog("Reminders").reminders_loop.stop()
         bot.remove_cog("Reminders")
     except Exception as e:
         logger.error(f"Error unloading: {e}")
