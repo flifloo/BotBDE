@@ -15,14 +15,6 @@ extension_name = "calendar"
 logger = logger.getChild(extension_name)
 url_re = re.compile(r"http:\/\/adelb\.univ-lyon1\.fr\/jsp\/custom\/modules\/plannings\/anonymous_cal\.jsp\?resources="
                     r"([0-9]+)&projectId=([0-9]+)")
-name_re = re.compile(r"([A-Z]+ [A-Z]+)")
-
-
-def url(resources: int, project_id: int, first_date: datetime, last_date: datetime):
-    first_date = first_date.strftime("%Y-%m-%d")
-    last_date = last_date.strftime("%Y-%m-%d")
-    return "http://adelb.univ-lyon1.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?" \
-           f"resources={resources}&projectId={project_id}&calType=ical&firstDate={first_date}&lastDate={last_date}"
 
 
 class Calendar(commands.Cog):
@@ -91,7 +83,7 @@ class Calendar(commands.Cog):
     @calendar.group("day", pass_context=True)
     async def calendar_day(self, ctx: commands.Context, name: str, day: str = None):
         s = db.Session()
-        c = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first()
+        c: db.Calendar = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first()
         if not c:
             raise BadArgument()
         if day is None:
@@ -101,14 +93,10 @@ class Calendar(commands.Cog):
                 date = datetime.strptime(day, "%d/%m/%Y")
             except ValueError:
                 raise BadArgument()
-        calendar = ics.Calendar(requests.get(url(c.resources, c.project_id, date, date)).text)
-        embed = Embed(title="Day calendar", description=date.strftime("%d/%m/%Y"))
-        for e in list(calendar.events)[::-1]:
-            start = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None).strftime('%H:%M')
-            end = e.end.replace(tzinfo=timezone.utc).astimezone(tz=None).strftime('%H:%M')
-            by = name_re.findall(e.description)[0]
-            embed.add_field(name=f"{start} - {end}",
-                            value=f"{e.name} | {e.location} - {by}", inline=False)
+        embed = Embed(title=f"Day calendar: {c.name}", description=date.strftime("%d/%m/%Y"))
+        for e in c.events(date, date):
+            embed.add_field(name=f"{e.begin.strftime('%M:%H')} - {e.end.strftime('%M:%H')}",
+                            value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
