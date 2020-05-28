@@ -99,7 +99,7 @@ class Reminders(commands.Cog):
         embed = Embed(title="You have a reminder !")
         user = self.bot.get_user(task.user)
         embed.set_author(name=f"{user.name}#{user.discriminator}", icon_url=user.avatar_url)
-        embed.add_field(name=str(task.date), value=task.message)
+        embed.add_field(name=str(task.creation_date), value=task.message)
         await (await self.bot.get_channel(task.channel).send(f"{user.mention}", embed=embed)).edit(content="")
 
     @commands.Cog.listener()
