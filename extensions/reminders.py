@@ -49,7 +49,7 @@ class Reminders(commands.Cog):
         time = time_pars(time)
         now = datetime.now()
         s = db.Session()
-        s.add(db.Task(message, ctx.author.id, ctx.channel.id, now + time))
+        s.add(db.Task(message, ctx.author.id, ctx.channel.id, now + time, ctx.message.created_at))
         s.commit()
         s.close()
 
@@ -99,7 +99,7 @@ class Reminders(commands.Cog):
         embed = Embed(title="You have a reminder !")
         user = self.bot.get_user(task.user)
         embed.set_author(name=f"{user.name}#{user.discriminator}", icon_url=user.avatar_url)
-        embed.add_field(name=str(task.date), value=task.message)
+        embed.add_field(name=str(task.creation_date), value=task.message)
         await (await self.bot.get_channel(task.channel).send(f"{user.mention}", embed=embed)).edit(content="")
 
     @commands.Cog.listener()
@@ -114,6 +114,9 @@ class Reminders(commands.Cog):
             else:
                 await ctx.send("An error occurred !")
                 raise error
+
+    def cog_unload(self):
+        self.reminders_loop.stop()
 
 
 def setup(bot):
@@ -131,7 +134,6 @@ def setup(bot):
 def teardown(bot):
     logger.info(f"Unloading...")
     try:
-        bot.get_cog("Reminders").reminders_loop.stop()
         bot.remove_cog("Reminders")
     except Exception as e:
         logger.error(f"Error unloading: {e}")
