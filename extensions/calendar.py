@@ -43,8 +43,8 @@ class Calendar(commands.Cog):
         embed.add_field(name="calendar remove <name>", value="Remove a server calendar", inline=False)
         embed.add_field(name="calendar day <name> [date]", value="show the current day or the given day", inline=False)
         embed.add_field(name="calendar week <name> [date]", value="Show the week or the given week", inline=False)
-        embed.add_field(name="calendar notify <name> [#channel|@user]",
-                        value="Notify the current channel or the giver channel/user of calendar events", inline=False)
+        embed.add_field(name="calendar notify",
+                        value="Command group to manage calendar notifications", inline=False)
         await ctx.send(embed=embed)
 
     @calendar.group("define", pass_context=True)
@@ -135,8 +135,21 @@ class Calendar(commands.Cog):
         await ctx.send(embed=embed)
 
     @calendar.group("notify", pass_context=True)
+    async def calendar_notify(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.invoke(self.calendar_notify_help)
+
+    @calendar_notify.group("help", pass_context=True)
+    async def calendar_notify_help(self, ctx: commands.Context):
+        embed = Embed(title="Calendar notify help")
+        embed.add_field(name="calendar notify set <name> [#channel|@user] [rm]",
+                        value="Notify the current channel or the giver channel/user of calendar events\n"
+                              "If you put `rm` at the end the notification will be delete", inline=False)
+        await ctx.send(embed=embed)
+
+    @calendar_notify.group("set", pass_context=True)
     @commands.guild_only()
-    async def calendar_notify(self, ctx: commands.Context, name: str):
+    async def calendar_notify_set(self, ctx: commands.Context, name: str, action: str = None):
         if ctx.message.channel_mentions and ctx.message.mentions:
             raise BadArgument()
         elif ctx.message.channel_mentions:
@@ -155,14 +168,24 @@ class Calendar(commands.Cog):
         else:
             m = ctx.channel.id
         s = db.Session()
-        s.add(db.CalendarNotify(m, query_calendar(name, ctx.guild.id).id))
+        c = query_calendar(name, ctx.guild.id)
+        n = s.query(db.CalendarNotify).filter(db.CalendarNotify.channel == m) \
+            .filter(db.CalendarNotify.calendar_id == c.id) \
+            .first()
+        if action is None and not n:
+            s.add(db.CalendarNotify(m, c.id))
+        elif action == "rm" and n:
+            s.delete(n)
+        else:
+            s.close()
+            raise BadArgument()
         s.commit()
         s.close()
         await ctx.message.add_reaction("\U0001f44d")
 
-    @calendar.group("trigger", pass_context=True)
+    @calendar_notify.group("trigger", pass_context=True)
     @commands.guild_only()
-    async def calendar_trigger(self, ctx: commands.Context, name: str):
+    async def calendar_notify_trigger(self, ctx: commands.Context, name: str):
         c = query_calendar(name, ctx.guild.id)
         now = datetime.now()
         await c.notify(self.bot, c.events(now, now)[0])
