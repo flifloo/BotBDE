@@ -6,5 +6,5 @@ engine = create_engine(config.get("db"))
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 from db.Task import Task
-from db.Calendar import Calendar
+from db.Calendar import Calendar, CalendarNotify
 Base.metadata.create_all(engine)

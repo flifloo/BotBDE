@@ -1,12 +1,14 @@
 import re
 from datetime import datetime, timezone
 
+from discord import Embed
+from discord.ext.commands import Bot
 import ics
 import requests
+from sqlalchemy.orm import relationship, Session
 
 from db import Base
-from sqlalchemy import Column, Integer, String, BigInteger
-
+from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey
 
 name_re = re.compile(r"([A-Z]+ [A-Z]+)")
 
@@ -26,6 +28,8 @@ class Calendar(Base):
     project_id = Column(Integer, nullable=False)
     server = Column(BigInteger, nullable=False)
 
+    calendars_notify = relationship("CalendarNotify", backref="calendar", lazy="subquery")
+
     def __init__(self, name: str, resources: int, project_id: int, server: int):
         self.name = name
         self.resources = resources
@@ -43,3 +47,23 @@ class Calendar(Base):
             e.organizer = name_re.findall(e.description)[0]
             events.append(e)
         return events
+
+    async def notify(self, bot: Bot, event: ics.Event):
+        for n in self.calendars_notify:
+            bot.loop.create_task(n.notify(bot, event))
+
+
+class CalendarNotify(Base):
+    __tablename__ = "calendars_notify"
+    channel = Column(BigInteger, primary_key=True)
+    calendar_id = Column(Integer, ForeignKey("calendars.id"), primary_key=True)
+
+    def __init__(self, channel: int, calender: int):
+        self.channel = channel
+        self.calendar_id = calender
+
+    async def notify(self, bot: Bot, event: ics.Event):
+        embed = Embed(title="Event is coming !")
+        embed.add_field(name=f"{event.begin.strftime('%H:%M')} - {event.end.strftime('%H:%M')}",
+                        value=f"{event.name} | {event.location} - {event.organizer}")
+        await bot.get_channel(self.channel).send(embed=embed)

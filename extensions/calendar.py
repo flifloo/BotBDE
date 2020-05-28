@@ -41,11 +41,14 @@ class Calendar(commands.Cog):
         embed.add_field(name="calendar define <name> <url>", value="Define a calendar", inline=False)
         embed.add_field(name="calendar list", value="List all server calendar", inline=False)
         embed.add_field(name="calendar remove <name>", value="Remove a server calendar", inline=False)
-        embed.add_field(name="calendar day [date]", value="show the current day or the given day", inline=False)
-        embed.add_field(name="calendar week [date]", value="Show the week or the given week", inline=False)
+        embed.add_field(name="calendar day <name> [date]", value="show the current day or the given day", inline=False)
+        embed.add_field(name="calendar week <name> [date]", value="Show the week or the given week", inline=False)
+        embed.add_field(name="calendar notify <name> [#channel|@user]",
+                        value="Notify the current channel or the giver channel/user of calendar events", inline=False)
         await ctx.send(embed=embed)
 
     @calendar.group("define", pass_context=True)
+    @commands.guild_only()
     async def calendar_define(self, ctx: commands.Context, name: str, url: str):
         try:
             ics.Calendar(requests.get(url).text)
@@ -65,6 +68,7 @@ class Calendar(commands.Cog):
         await ctx.message.add_reaction("\U0001f44d")
 
     @calendar.group("list", pass_context=True)
+    @commands.guild_only()
     async def calendar_list(self, ctx: commands.Context):
         embed = Embed(title="Calendar list")
         s = db.Session()
@@ -74,6 +78,7 @@ class Calendar(commands.Cog):
         await ctx.send(embed=embed)
 
     @calendar.group("remove", pass_context=True)
+    @commands.guild_only()
     async def calendar_remove(self, ctx: commands.Context, name: str = None):
         if name is None:
             await ctx.invoke(self.calendar_list)
@@ -90,6 +95,7 @@ class Calendar(commands.Cog):
                 raise BadArgument()
 
     @calendar.group("day", pass_context=True)
+    @commands.guild_only()
     async def calendar_day(self, ctx: commands.Context, name: str, day: str = None):
         c = query_calendar(name, ctx.guild.id)
         if day is None:
@@ -101,11 +107,12 @@ class Calendar(commands.Cog):
                 raise BadArgument()
         embed = Embed(title=f"Day calendar: {c.name}", description=date.strftime("%d/%m/%Y"))
         for e in c.events(date, date):
-            embed.add_field(name=f"{e.begin.strftime('%M:%H')} - {e.end.strftime('%M:%H')}",
+            embed.add_field(name=f"{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}",
                             value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
         await ctx.send(embed=embed)
 
     @calendar.group("week", pass_context=True)
+    @commands.guild_only()
     async def calendar_week(self, ctx: commands.Context, name: str, day: str = None):
         c = query_calendar(name, ctx.guild.id)
         if day is None:
@@ -126,6 +133,39 @@ class Calendar(commands.Cog):
             embed.add_field(name=date.strftime("%d/%m/%Y"), value="\n".join(events) or "Nothing !", inline=False)
             date = date + timedelta(days=1)
         await ctx.send(embed=embed)
+
+    @calendar.group("notify", pass_context=True)
+    @commands.guild_only()
+    async def calendar_notify(self, ctx: commands.Context, name: str):
+        if ctx.message.channel_mentions and ctx.message.mentions:
+            raise BadArgument()
+        elif ctx.message.channel_mentions:
+            if len(ctx.message.channel_mentions) > 1:
+                raise BadArgument()
+            else:
+                m = ctx.message.channel_mentions[0].id
+        elif ctx.message.mentions:
+            if len(ctx.message.mentions) > 1:
+                raise BadArgument()
+            else:
+                m = ctx.message.mentions[0]
+                if not m.dm_channel:
+                    await m.create_dm()
+                m = m.dm_channel.id
+        else:
+            m = ctx.channel.id
+        s = db.Session()
+        s.add(db.CalendarNotify(m, query_calendar(name, ctx.guild.id).id))
+        s.commit()
+        s.close()
+        await ctx.message.add_reaction("\U0001f44d")
+
+    @calendar.group("trigger", pass_context=True)
+    @commands.guild_only()
+    async def calendar_trigger(self, ctx: commands.Context, name: str):
+        c = query_calendar(name, ctx.guild.id)
+        now = datetime.now()
+        await c.notify(self.bot, c.events(now, now)[0])
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
