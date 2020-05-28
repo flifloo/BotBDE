@@ -26,7 +26,7 @@ def query_calendar(name: str, guild: int) -> db.Calendar:
     return c
 
 
-def get_one_mention(ctx: commands.Context):
+async def get_one_mention(ctx: commands.Context):
     if ctx.message.channel_mentions and ctx.message.mentions:
         raise BadArgument()
     elif ctx.message.channel_mentions:
@@ -175,7 +175,7 @@ class Calendar(commands.Cog):
     @calendar_notify.group("add", pass_context=True)
     @commands.guild_only()
     async def calendar_notify_set(self, ctx: commands.Context, name: str):
-        m = get_one_mention(ctx)
+        m = await get_one_mention(ctx)
         s = db.Session()
         c = query_calendar(name, ctx.guild.id)
         n = s.query(db.CalendarNotify).filter(db.CalendarNotify.channel == m) \
@@ -192,14 +192,14 @@ class Calendar(commands.Cog):
 
     @calendar_notify.group("remove", pass_context=True)
     async def calendar_notify_remove(self, ctx: commands.Context, name: str):
-        m = get_one_mention(ctx)
+        m = await get_one_mention(ctx)
         s = db.Session()
         c = query_calendar(name, ctx.guild.id)
         n = s.query(db.CalendarNotify).filter(db.CalendarNotify.channel == m) \
             .filter(db.CalendarNotify.calendar_id == c.id) \
             .first()
         if n:
-            s.delete(db.CalendarNotify(m, c.id))
+            s.delete(n)
         else:
             s.close()
             raise BadArgument()
@@ -209,10 +209,14 @@ class Calendar(commands.Cog):
 
     @calendar_notify.group("list")
     @commands.guild_only()
-    async def calendar_notify_list(self, ctx: commands.Context):
+    async def calendar_notify_list(self, ctx: commands.Context, name: str = None):
         s = db.Session()
         embed = Embed(title="Notify list")
-        for c in s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).all():
+        if name is None:
+            calendars = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).all()
+        else:
+            calendars = [query_calendar(name, ctx.guild.id)]
+        for c in calendars:
             notify = []
             for n in c.calendars_notify:
                 ch = self.bot.get_channel(n.channel)
@@ -220,7 +224,7 @@ class Calendar(commands.Cog):
                     notify.append(ch.mention)
                 elif type(ch) == DMChannel:
                     notify.append(ch.recipient.mention)
-            embed.add_field(name=c.name, value="\n".join(notify) or "Nothing here")
+            embed.add_field(name=c.name, value="\n".join(notify) or "Nothing here", inline=False)
         await ctx.send(embed=embed)
 
     @calendar_notify.group("trigger", pass_context=True)
