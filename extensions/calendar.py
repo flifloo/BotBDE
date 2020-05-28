@@ -1,8 +1,11 @@
-import ics
 import re
+from datetime import datetime, timezone
+
+import ics
 import requests
 from discord import Embed
 from discord.ext import commands
+from discord.ext import tasks
 from discord.ext.commands import CommandNotFound, BadArgument, MissingRequiredArgument
 
 from bot_bde import db
@@ -12,6 +15,14 @@ extension_name = "calendar"
 logger = logger.getChild(extension_name)
 url_re = re.compile(r"http:\/\/adelb\.univ-lyon1\.fr\/jsp\/custom\/modules\/plannings\/anonymous_cal\.jsp\?resources="
                     r"([0-9]+)&projectId=([0-9]+)")
+name_re = re.compile(r"([A-Z]+ [A-Z]+)")
+
+
+def url(resources: int, project_id: int, first_date: datetime, last_date: datetime):
+    first_date = first_date.strftime("%Y-%m-%d")
+    last_date = last_date.strftime("%Y-%m-%d")
+    return "http://adelb.univ-lyon1.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?" \
+           f"resources={resources}&projectId={project_id}&calType=ical&firstDate={first_date}&lastDate={last_date}"
 
 
 class Calendar(commands.Cog):
@@ -26,7 +37,11 @@ class Calendar(commands.Cog):
     @calendar.group("help", pass_context=True)
     async def calendar_help(self, ctx: commands.Context):
         embed = Embed(title="Calendar help")
-        embed.add_field(name="calendar define <name> <url>", value="Define a calendar\n", inline=False)
+        embed.add_field(name="calendar define <name> <url>", value="Define a calendar", inline=False)
+        embed.add_field(name="calendar list", value="List all server calendar", inline=False)
+        embed.add_field(name="calendar remove <name>", value="Remove a server calendar", inline=False)
+        embed.add_field(name="calendar day [date]", value="show the current day or the given day", inline=False)
+        embed.add_field(name="calendar week [date]", value="Show the week or the given week", inline=False)
         await ctx.send(embed=embed)
 
     @calendar.group("define", pass_context=True)
@@ -40,10 +55,10 @@ class Calendar(commands.Cog):
             raise BadArgument()
 
         s = db.Session()
-        if s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id and db.Calendar.name == name).first():
+        if s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first():
             s.close()
             raise BadArgument()
-        s.add(db.Calendar(name, int(m[0][0]), int(m[0][0]), ctx.guild.id))
+        s.add(db.Calendar(name, int(m[0][0]), int(m[0][1]), ctx.guild.id))
         s.commit()
         s.close()
         await ctx.message.add_reaction("\U0001f44d")
@@ -63,7 +78,7 @@ class Calendar(commands.Cog):
             await ctx.invoke(self.calendar_list)
         else:
             s = db.Session()
-            c = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id and db.Calendar.name == name).first()
+            c = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first()
             if c:
                 s.delete(c)
                 s.commit()
@@ -72,6 +87,29 @@ class Calendar(commands.Cog):
             else:
                 s.close()
                 raise BadArgument()
+
+    @calendar.group("day", pass_context=True)
+    async def calendar_day(self, ctx: commands.Context, name: str, day: str = None):
+        s = db.Session()
+        c = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first()
+        if not c:
+            raise BadArgument()
+        if day is None:
+            date = datetime.now()
+        else:
+            try:
+                date = datetime.strptime(day, "%d/%m/%Y")
+            except ValueError:
+                raise BadArgument()
+        calendar = ics.Calendar(requests.get(url(c.resources, c.project_id, date, date)).text)
+        embed = Embed(title="Day calendar", description=date.strftime("%d/%m/%Y"))
+        for e in list(calendar.events)[::-1]:
+            start = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None).strftime('%H:%M')
+            end = e.end.replace(tzinfo=timezone.utc).astimezone(tz=None).strftime('%H:%M')
+            by = name_re.findall(e.description)[0]
+            embed.add_field(name=f"{start} - {end}",
+                            value=f"{e.name} | {e.location} - {by}", inline=False)
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
