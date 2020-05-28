@@ -115,6 +115,9 @@ class Reminders(commands.Cog):
                 await ctx.send("An error occurred !")
                 raise error
 
+    def cog_unload(self):
+        self.reminders_loop.stop()
+
 
 def setup(bot):
     logger.info(f"Loading...")
@@ -131,7 +134,6 @@ def setup(bot):
 def teardown(bot):
     logger.info(f"Unloading...")
     try:
-        bot.get_cog("Reminders").reminders_loop.stop()
         bot.remove_cog("Reminders")
     except Exception as e:
         logger.error(f"Error unloading: {e}")
