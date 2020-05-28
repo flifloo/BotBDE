@@ -26,6 +26,27 @@ def query_calendar(name: str, guild: int) -> db.Calendar:
     return c
 
 
+def get_one_mention(ctx: commands.Context):
+    if ctx.message.channel_mentions and ctx.message.mentions:
+        raise BadArgument()
+    elif ctx.message.channel_mentions:
+        if len(ctx.message.channel_mentions) > 1:
+            raise BadArgument()
+        else:
+            m = ctx.message.channel_mentions[0].id
+    elif ctx.message.mentions:
+        if len(ctx.message.mentions) > 1:
+            raise BadArgument()
+        else:
+            m = ctx.message.mentions[0]
+            if not m.dm_channel:
+                await m.create_dm()
+            m = m.dm_channel.id
+    else:
+        m = ctx.channel.id
+    return m
+
+
 class Calendar(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -142,40 +163,43 @@ class Calendar(commands.Cog):
     @calendar_notify.group("help", pass_context=True)
     async def calendar_notify_help(self, ctx: commands.Context):
         embed = Embed(title="Calendar notify help")
-        embed.add_field(name="calendar notify set <name> [#channel|@user] [rm]",
-                        value="Notify the current channel or the giver channel/user of calendar events\n"
-                              "If you put `rm` at the end the notification will be delete", inline=False)
+        embed.add_field(name="calendar notify add <name> [#channel|@user]",
+                        value="Notify the current channel or the giver channel/user of calendar events", inline=False)
+        embed.add_field(name="calendar notify remove <name> [#channel|@user]",
+                        value="Remove the calendar notify of the current channel or the given channel/user",
+                        inline=False)
+        embed.add_field(name="calendar notify list [name]",
+                        value="List all notify of all calendar or the given one", inline=False)
         await ctx.send(embed=embed)
 
-    @calendar_notify.group("set", pass_context=True)
+    @calendar_notify.group("add", pass_context=True)
     @commands.guild_only()
-    async def calendar_notify_set(self, ctx: commands.Context, name: str, action: str = None):
-        if ctx.message.channel_mentions and ctx.message.mentions:
-            raise BadArgument()
-        elif ctx.message.channel_mentions:
-            if len(ctx.message.channel_mentions) > 1:
-                raise BadArgument()
-            else:
-                m = ctx.message.channel_mentions[0].id
-        elif ctx.message.mentions:
-            if len(ctx.message.mentions) > 1:
-                raise BadArgument()
-            else:
-                m = ctx.message.mentions[0]
-                if not m.dm_channel:
-                    await m.create_dm()
-                m = m.dm_channel.id
-        else:
-            m = ctx.channel.id
+    async def calendar_notify_set(self, ctx: commands.Context, name: str):
+        m = get_one_mention(ctx)
         s = db.Session()
         c = query_calendar(name, ctx.guild.id)
         n = s.query(db.CalendarNotify).filter(db.CalendarNotify.channel == m) \
             .filter(db.CalendarNotify.calendar_id == c.id) \
             .first()
-        if action is None and not n:
+        if not n:
             s.add(db.CalendarNotify(m, c.id))
-        elif action == "rm" and n:
-            s.delete(n)
+        else:
+            s.close()
+            raise BadArgument()
+        s.commit()
+        s.close()
+        await ctx.message.add_reaction("\U0001f44d")
+
+    @calendar_notify.group("remove", pass_context=True)
+    async def calendar_notify_remove(self, ctx: commands.Context, name: str):
+        m = get_one_mention(ctx)
+        s = db.Session()
+        c = query_calendar(name, ctx.guild.id)
+        n = s.query(db.CalendarNotify).filter(db.CalendarNotify.channel == m) \
+            .filter(db.CalendarNotify.calendar_id == c.id) \
+            .first()
+        if n:
+            s.delete(db.CalendarNotify(m, c.id))
         else:
             s.close()
             raise BadArgument()
