@@ -118,16 +118,21 @@ class Calendar(commands.Cog):
     async def calendar_day(self, ctx: commands.Context, name: str, day: str = None):
         c = query_calendar(name, ctx.guild.id)
         if day is None:
-            date = datetime.now()
+            date = datetime.now().date()
         else:
             try:
-                date = datetime.strptime(day, "%d/%m/%Y")
+                date = datetime.strptime(day, "%d/%m/%Y").date()
             except ValueError:
                 raise BadArgument()
         embed = Embed(title=f"Day calendar: {c.name}", description=date.strftime("%d/%m/%Y"))
         for e in c.events(date, date):
             embed.add_field(name=f"{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}",
                             value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
+        s = db.Session()
+        if s.is_modified(c):
+            s.add(c)
+            s.commit()
+        s.close()
         await ctx.send(embed=embed)
 
     @calendar.group("week", pass_context=True)
@@ -135,10 +140,10 @@ class Calendar(commands.Cog):
     async def calendar_week(self, ctx: commands.Context, name: str, day: str = None):
         c = query_calendar(name, ctx.guild.id)
         if day is None:
-            date = datetime.now()
+            date = datetime.now().date()
         else:
             try:
-                date = datetime.strptime(day, "%d/%m/%Y")
+                date = datetime.strptime(day, "%d/%m/%Y").date()
             except ValueError:
                 raise BadArgument()
         date -= timedelta(days=date.weekday())
@@ -151,6 +156,11 @@ class Calendar(commands.Cog):
                               f"**{e.name}** | {e.location} - {e.organizer}")
             embed.add_field(name=date.strftime("%d/%m/%Y"), value="\n".join(events) or "Nothing !", inline=False)
             date = date + timedelta(days=1)
+        s = db.Session()
+        if s.is_modified(c):
+            s.add(c)
+            s.commit()
+        s.close()
         await ctx.send(embed=embed)
 
     @calendar.group("notify", pass_context=True)
@@ -231,9 +241,13 @@ class Calendar(commands.Cog):
         s = db.Session()
         now = datetime.now().replace(tzinfo=timezone.utc).astimezone(tz=None)
         for c in s.query(db.Calendar).all():
-            for e in c.events(now, now):
+            for e in c.events(now.date(), now.date()):
                 if xor(e.begin >= now - timedelta(minutes=30), e.begin >= now - timedelta(minutes=10)):
                     self.bot.loop.create_task(await c.notify(self.bot, e))
+            if s.is_modified(c):
+                s.add(c)
+                s.commit()
+        s.close()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):

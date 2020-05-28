@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from discord import Embed
 from discord.ext.commands import Bot
@@ -8,7 +8,7 @@ import requests
 from sqlalchemy.orm import relationship, Session
 
 from db import Base
-from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey
+from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey, Text, DateTime
 
 name_re = re.compile(r"([A-Z]+ [A-Z]+)")
 
@@ -27,6 +27,8 @@ class Calendar(Base):
     resources = Column(Integer, nullable=False)
     project_id = Column(Integer, nullable=False)
     server = Column(BigInteger, nullable=False)
+    calendar = Column(Text)
+    calendar_update = Column(DateTime)
 
     calendars_notify = relationship("CalendarNotify", backref="calendar", lazy="subquery")
 
@@ -36,17 +38,24 @@ class Calendar(Base):
         self.project_id = project_id
         self.server = server
 
-    def cal(self, first_date: datetime, last_date: datetime) -> ics.Calendar:
-        return ics.Calendar(requests.get(url(self.resources, self.project_id, first_date, last_date)).text)
+    def cal(self) -> ics.Calendar:
+        now = datetime.now()
+        if not self.calendar or self.calendar_update <= now - timedelta(minutes=30):
+            first_date = now - timedelta(days=now.weekday())
+            last_date = now + timedelta(days=31)
+            self.calendar = requests.get(url(self.resources, self.project_id, first_date, last_date)).text
+            self.calendar_update = now
 
-    def events(self, first_date: datetime, last_date: datetime) -> [ics.Event]:
+        return ics.Calendar(self.calendar)
+
+    def events(self, first_date: datetime.date, last_date: datetime.date) -> [ics.Event]:
         events = []
-        for e in sorted(list(self.cal(first_date, last_date).events), key=lambda x: x.begin):
+        for e in sorted(list(self.cal().events), key=lambda x: x.begin):
             e.begin = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
             e.end = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
             e.organizer = name_re.findall(e.description)[0]
             events.append(e)
-        return events
+        return list(filter(lambda x: x.begin.date() >= first_date and x.end.date() <= last_date, events))
 
     async def notify(self, bot: Bot, event: ics.Event):
         for n in self.calendars_notify:
