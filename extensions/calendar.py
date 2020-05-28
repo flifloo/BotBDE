@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import ics
 import requests
-from discord import Embed
+from discord import Embed, DMChannel, TextChannel
 from discord.ext import commands
 from discord.ext import tasks
 from discord.ext.commands import CommandNotFound, BadArgument, MissingRequiredArgument
@@ -182,6 +182,22 @@ class Calendar(commands.Cog):
         s.commit()
         s.close()
         await ctx.message.add_reaction("\U0001f44d")
+
+    @calendar_notify.group("list")
+    @commands.guild_only()
+    async def calendar_notify_list(self, ctx: commands.Context):
+        s = db.Session()
+        embed = Embed(title="Notify list")
+        for c in s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).all():
+            notify = []
+            for n in c.calendars_notify:
+                ch = self.bot.get_channel(n.channel)
+                if type(ch) == TextChannel:
+                    notify.append(ch.mention)
+                elif type(ch) == DMChannel:
+                    notify.append(ch.recipient.mention)
+            embed.add_field(name=c.name, value="\n".join(notify) or "Nothing here")
+        await ctx.send(embed=embed)
 
     @calendar_notify.group("trigger", pass_context=True)
     @commands.guild_only()
