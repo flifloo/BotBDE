@@ -29,6 +29,7 @@ class Calendar(Base):
     server = Column(BigInteger, nullable=False)
     calendar = Column(Text)
     calendar_update = Column(DateTime)
+    last_notify = Column(DateTime, nullable=False, default=datetime.now())
 
     calendars_notify = relationship("CalendarNotify", backref="calendar", lazy="subquery")
 
@@ -58,6 +59,7 @@ class Calendar(Base):
         return list(filter(lambda x: x.begin.date() >= first_date and x.end.date() <= last_date, events))
 
     async def notify(self, bot: Bot, event: ics.Event):
+        self.last_notify = datetime.now()
         for n in self.calendars_notify:
             bot.loop.create_task(n.notify(bot, event))
 

@@ -242,7 +242,8 @@ class Calendar(commands.Cog):
         now = datetime.now().replace(tzinfo=timezone.utc).astimezone(tz=None)
         for c in s.query(db.Calendar).all():
             for e in c.events(now.date(), now.date()):
-                if xor(e.begin >= now - timedelta(minutes=30), e.begin >= now - timedelta(minutes=10)):
+                if xor(c.last_notify < e.begin - timedelta(minutes=30) <= now,
+                       c.last_notify < e.begin - timedelta(minutes=10) <= now):
                     self.bot.loop.create_task(await c.notify(self.bot, e))
             if s.is_modified(c):
                 s.add(c)
