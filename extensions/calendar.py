@@ -1,5 +1,6 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from operator import xor
 
 import ics
 import requests
@@ -234,6 +235,15 @@ class Calendar(commands.Cog):
         now = datetime.now()
         await c.notify(self.bot, c.events(now, now)[0])
 
+    @tasks.loop(minutes=1)
+    async def calendar_notify_loop(self):
+        s = db.Session()
+        now = datetime.now().replace(tzinfo=timezone.utc).astimezone(tz=None)
+        for c in s.query(db.Calendar).all():
+            for e in c.events(now, now):
+                if xor(e.begin >= now - timedelta(minutes=30), e.begin >= now - timedelta(minutes=10)):
+                    self.bot.loop.create_task(await c.notify(self.bot, e))
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
         if ctx.invoked_with == extension_name or \
@@ -247,11 +257,16 @@ class Calendar(commands.Cog):
                 await ctx.send("An error occurred !")
                 raise error
 
+    def cog_unload(self):
+        self.calendar_notify_loop.stop()
+
 
 def setup(bot):
     logger.info(f"Loading...")
     try:
-        bot.add_cog(Calendar(bot))
+        calendar = Calendar(bot)
+        bot.add_cog(calendar)
+        calendar.calendar_notify_loop.start()
     except Exception as e:
         logger.error(f"Error loading: {e}")
     else:
