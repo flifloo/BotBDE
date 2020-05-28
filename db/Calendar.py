@@ -37,7 +37,7 @@ class Calendar(Base):
 
     def events(self, first_date: datetime, last_date: datetime) -> [ics.Event]:
         events = []
-        for e in list(self.cal(first_date, last_date).events)[::-1]:
+        for e in sorted(list(self.cal(first_date, last_date).events), key=lambda x: x.begin):
             e.begin = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
             e.end = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
             e.organizer = name_re.findall(e.description)[0]

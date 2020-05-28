@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 
 import ics
 import requests
@@ -15,6 +15,15 @@ extension_name = "calendar"
 logger = logger.getChild(extension_name)
 url_re = re.compile(r"http:\/\/adelb\.univ-lyon1\.fr\/jsp\/custom\/modules\/plannings\/anonymous_cal\.jsp\?resources="
                     r"([0-9]+)&projectId=([0-9]+)")
+
+
+def query_calendar(name: str, guild: int) -> db.Calendar:
+    s = db.Session()
+    c: db.Calendar = s.query(db.Calendar).filter(db.Calendar.server == guild).filter(db.Calendar.name == name).first()
+    s.close()
+    if not c:
+        raise BadArgument()
+    return c
 
 
 class Calendar(commands.Cog):
@@ -82,10 +91,7 @@ class Calendar(commands.Cog):
 
     @calendar.group("day", pass_context=True)
     async def calendar_day(self, ctx: commands.Context, name: str, day: str = None):
-        s = db.Session()
-        c: db.Calendar = s.query(db.Calendar).filter(db.Calendar.server == ctx.guild.id).filter(db.Calendar.name == name).first()
-        if not c:
-            raise BadArgument()
+        c = query_calendar(name, ctx.guild.id)
         if day is None:
             date = datetime.now()
         else:
@@ -97,6 +103,28 @@ class Calendar(commands.Cog):
         for e in c.events(date, date):
             embed.add_field(name=f"{e.begin.strftime('%M:%H')} - {e.end.strftime('%M:%H')}",
                             value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
+        await ctx.send(embed=embed)
+
+    @calendar.group("week", pass_context=True)
+    async def calendar_week(self, ctx: commands.Context, name: str, day: str = None):
+        c = query_calendar(name, ctx.guild.id)
+        if day is None:
+            date = datetime.now()
+        else:
+            try:
+                date = datetime.strptime(day, "%d/%m/%Y")
+            except ValueError:
+                raise BadArgument()
+        date -= timedelta(days=date.weekday())
+        embed = Embed(title=f"Week calendar: {c.name}",
+                      description=f"{date.strftime('%d/%m/%Y')} - {(date + timedelta(days=4)).strftime('%d/%m/%Y')}")
+        for d in range(5):
+            events = []
+            for e in c.events(date, date):
+                events.append(f"*{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}*: "
+                              f"**{e.name}** | {e.location} - {e.organizer}")
+            embed.add_field(name=date.strftime("%d/%m/%Y"), value="\n".join(events) or "Nothing !", inline=False)
+            date = date + timedelta(days=1)
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
