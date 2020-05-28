@@ -49,7 +49,7 @@ class Reminders(commands.Cog):
         time = time_pars(time)
         now = datetime.now()
         s = db.Session()
-        s.add(db.Task(message, ctx.author.id, ctx.channel.id, now + time))
+        s.add(db.Task(message, ctx.author.id, ctx.channel.id, now + time, ctx.message.created_at))
         s.commit()
         s.close()
 

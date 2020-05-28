@@ -10,10 +10,12 @@ class Task(Base):
     user = Column(BigInteger, nullable=False)
     channel = Column(BigInteger, nullable=False)
     date = Column(DateTime, nullable=False)
-    creation_date = Column(DateTime, default=datetime.now())
+    creation_date = Column(DateTime, nullable=False, default=datetime.now())
 
-    def __init__(self, message: str, user: int, channel: int, date: datetime):
+    def __init__(self, message: str, user: int, channel: int, date: datetime, creation_date: datetime = None):
         self.message = message
         self.user = user
         self.channel = channel
         self.date = date
+        if creation_date:
+            self.creation_date = creation_date
