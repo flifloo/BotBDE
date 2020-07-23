@@ -7,4 +7,5 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 from db.Task import Task
 from db.Greetings import Greetings
+from db.Presentation import Presentation
 Base.metadata.create_all(engine)

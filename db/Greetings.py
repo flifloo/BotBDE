@@ -11,7 +11,7 @@ class Greetings(Base):
     join_enable = Column(Boolean, nullable=False, default=False)
     leave_message = Column(Text, nullable=False, default="")
     leave_enable = Column(Boolean, nullable=False, default=False)
-    guild = Column(BigInteger, nullable=False)
+    guild = Column(BigInteger, nullable=False, unique=True)
 
     def __init__(self, guild: int):
         self.guild = guild
