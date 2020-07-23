@@ -58,11 +58,12 @@ class Presentation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: Message):
-        s = db.Session()
-        p = s.query(db.Presentation).filter(db.Presentation.guild == message.guild.id).first()
-        s.close()
-        if p and p.channel == message.channel.id and p.role not in map(lambda x: x.id, message.author.roles):
-            await message.author.add_roles(message.guild.get_role(p.role), reason="Presentation done")
+        if message.guild is not None:
+            s = db.Session()
+            p = s.query(db.Presentation).filter(db.Presentation.guild == message.guild.id).first()
+            s.close()
+            if p and p.channel == message.channel.id and p.role not in map(lambda x: x.id, message.author.roles):
+                await message.author.add_roles(message.guild.get_role(p.role), reason="Presentation done")
 
 
 def setup(bot):

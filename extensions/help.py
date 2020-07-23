@@ -1,6 +1,7 @@
 from discord import Embed
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument, MissingPermissions
+from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument, MissingPermissions, \
+    NoPrivateMessage
 
 from administrator import config
 from administrator.logger import logger
@@ -14,7 +15,6 @@ logger = logger.getChild(extension_name)
 class Help(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.purges = {}
 
     @commands.command("help", pass_context=True)
     async def help(self, ctx: commands.Context):
@@ -48,7 +48,8 @@ class Help(commands.Cog):
             await ctx.message.add_reaction("\u2753")
         elif isinstance(error, MissingRequiredArgument) or isinstance(error, BadArgument):
             await ctx.message.add_reaction("\u274C")
-        elif isinstance(error, NotOwner) or isinstance(error, MissingPermissions):
+        elif isinstance(error, NotOwner) or isinstance(error, MissingPermissions)\
+                or isinstance(error, NoPrivateMessage):
             await ctx.message.add_reaction("\u274C")
         else:
             await ctx.send("An error occurred !")

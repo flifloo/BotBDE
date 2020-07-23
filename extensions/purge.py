@@ -41,17 +41,18 @@ class Purge(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        user = self.bot.get_user(payload.user_id)
-        message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id)\
-            .fetch_message(payload.message_id)
-        if user.id in self.purges:
-            if message.channel == self.purges[user.id].channel:
-                async with message.channel.typing():
-                    await message.channel.purge(before=self.purges[user.id], after=message,
-                                                         limit=None)
-                    await self.purges[user.id].delete()
-                    await message.delete()
-                    del self.purges[user.id]
+        if payload.guild_id:
+            user = self.bot.get_user(payload.user_id)
+            message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id)\
+                .fetch_message(payload.message_id)
+            if user.id in self.purges:
+                if message.channel == self.purges[user.id].channel:
+                    async with message.channel.typing():
+                        await message.channel.purge(before=self.purges[user.id], after=message,
+                                                             limit=None)
+                        await self.purges[user.id].delete()
+                        await message.delete()
+                        del self.purges[user.id]
 
 
 def setup(bot):
