@@ -1,4 +1,4 @@
-from bot_bde.config import config
+from administrator.config import config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base

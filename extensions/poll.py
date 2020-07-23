@@ -2,9 +2,8 @@ from datetime import datetime
 
 from discord.ext import commands
 from discord import Member, Embed, Reaction
-from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 
-from bot_bde.logger import logger
+from administrator.logger import logger
 
 
 extension_name = "poll"
@@ -89,20 +88,6 @@ class Poll(commands.Cog):
         embed.set_footer(text=embed.footer.text + "\n" + f"Close: {time.strftime('%d/%m/%Y %H:%M')}")
         await message.edit(embed=embed)
         del self.polls[id]
-
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name or \
-                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
-            if isinstance(error, CommandNotFound):
-                await ctx.message.add_reaction("\u2753")
-                await ctx.message.delete(delay=30)
-            if isinstance(error, MissingRequiredArgument):
-                await ctx.message.add_reaction("\u274C")
-                await ctx.message.delete(delay=30)
-            else:
-                await ctx.send("An error occurred !")
-                raise error
 
 
 def setup(bot):

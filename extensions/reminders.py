@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 
 from discord.ext import commands
 from discord import Embed
-from discord.ext.commands import CommandNotFound, BadArgument, MissingRequiredArgument
+from discord.ext.commands import CommandNotFound, BadArgument
 from discord.ext import tasks
 
-from bot_bde.logger import logger
-from bot_bde import db
+from administrator.logger import logger
+from administrator import db
 
 
 extension_name = "reminders"
@@ -37,11 +37,11 @@ class Reminders(commands.Cog):
     @reminder.group("help", pass_context=True)
     async def reminder_help(self, ctx: commands.Context):
         embed = Embed(title="Reminder help")
-        embed.add_field(name="speak add <message> <time>", value="Add a reminder to your reminders list\n"
-                                                                 "Time: ?D?H?M?S", inline=False)
-        embed.add_field(name="speak list", value="Show your tasks list", inline=False)
-        embed.add_field(name="speak remove [N°]", value="Show your tasks list with if no id given\n"
-                                                        "Remove the task withe the matching id", inline=False)
+        embed.add_field(name="reminder add <message> <time>", value="Add a reminder to your reminders list\n"
+                                                                    "Time: ?D?H?M?S", inline=False)
+        embed.add_field(name="reminder list", value="Show your tasks list", inline=False)
+        embed.add_field(name="reminder remove [N°]", value="Show your tasks list with if no id given\n"
+                                                           "Remove the task withe the matching id", inline=False)
         await ctx.send(embed=embed)
 
     @reminder.group("add", pass_context=True)
@@ -65,7 +65,7 @@ class Reminders(commands.Cog):
         embed = Embed(title="Tasks list")
         s = db.Session()
         for t in s.query(db.Task).filter(db.Task.user == ctx.author.id).all():
-            embed.add_field(name=f"N°{t.id} | {t.date}", value=f"{t.message}", inline=False)
+            embed.add_field(name=f"N°{t.id} | {t.date.strftime('%d/%m/%Y %H:%M')}", value=f"{t.message}", inline=False)
         s.close()
         await ctx.send(embed=embed)
 
@@ -99,21 +99,8 @@ class Reminders(commands.Cog):
         embed = Embed(title="You have a reminder !")
         user = self.bot.get_user(task.user)
         embed.set_author(name=f"{user.name}#{user.discriminator}", icon_url=user.avatar_url)
-        embed.add_field(name=str(task.creation_date), value=task.message)
+        embed.add_field(name=str(task.creation_date.strftime('%d/%m/%Y %H:%M')), value=task.message)
         await (await self.bot.get_channel(task.channel).send(f"{user.mention}", embed=embed)).edit(content="")
-
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == "reminder" or \
-                (ctx.command.root_parent and ctx.command.root_parent.name == "reminder"):
-            if isinstance(error, CommandNotFound)\
-                    or isinstance(error, BadArgument)\
-                    or isinstance(error, MissingRequiredArgument):
-                await ctx.message.add_reaction("\u2753")
-                await ctx.message.delete(delay=30)
-            else:
-                await ctx.send("An error occurred !")
-                raise error
 
     def cog_unload(self):
         self.reminders_loop.stop()

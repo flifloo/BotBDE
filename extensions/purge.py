@@ -2,9 +2,8 @@ from asyncio import sleep
 
 from discord.ext import commands
 from discord import Embed, RawReactionActionEvent
-from discord.ext.commands import CommandNotFound
 
-from bot_bde.logger import logger
+from administrator.logger import logger
 
 
 extension_name = "purge"
@@ -56,16 +55,6 @@ class Purge(commands.Cog):
                     await message.delete()
                     del self.purges[user.id]
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name or \
-                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
-            if isinstance(error, CommandNotFound):
-                await ctx.message.add_reaction("\u2753")
-            else:
-                await ctx.send("An error occurred !")
-                raise error
-
 
 def setup(bot):
     logger.info(f"Loading...")
@@ -80,7 +69,7 @@ def setup(bot):
 def teardown(bot):
     logger.info(f"Unloading...")
     try:
-        bot.remove_cog("Speak")
+        bot.remove_cog("Purge")
     except Exception as e:
         logger.error(f"Error unloading: {e}")
     else:

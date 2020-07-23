@@ -12,7 +12,7 @@ logging.basicConfig(
     format=log_format,
     level=logging.INFO
 )
-logger = logging.getLogger("BotBDE")
+logger = logging.getLogger("Administrator")
 handler = handlers.TimedRotatingFileHandler("../logs/current.log", when="d", interval=1)
 handler.suffix = "%Y-%m-%d"
 handler.style = log_format

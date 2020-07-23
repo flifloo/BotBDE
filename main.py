@@ -1,1 +1,1 @@
-import bot_bde
+import administrator

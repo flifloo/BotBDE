@@ -1,5 +1,5 @@
 from discord.ext import commands
-from bot_bde import config
+from administrator import config
 
 
 class NotOwner(commands.CheckFailure):

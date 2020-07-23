@@ -1,4 +1,4 @@
-from bot_bde.logger import logger
+from administrator.logger import logger
 from os.path import isfile
 from json import load
 

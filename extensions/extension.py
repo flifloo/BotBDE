@@ -1,8 +1,7 @@
 from discord.ext import commands
-from discord.ext.commands.errors import CommandNotFound
 from discord import Embed
-from bot_bde.check import is_owner, NotOwner
-from bot_bde.logger import logger
+from administrator.check import is_owner
+from administrator.logger import logger
 
 
 extension_name = "extension"
@@ -52,18 +51,6 @@ class Extension(commands.Cog):
             await ctx.message.add_reaction("\u26a0")
         else:
             await ctx.message.add_reaction("\U0001f44d")
-
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name or \
-                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
-            if isinstance(error, NotOwner):
-                await ctx.message.add_reaction("\u274C")
-            elif isinstance(error, CommandNotFound):
-                await ctx.message.add_reaction("\u2753")
-            else:
-                await ctx.send("An error occurred !")
-                raise error
 
 
 def setup(bot):

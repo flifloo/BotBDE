@@ -1,4 +1,4 @@
-from bot_bde.config import config
+from administrator.config import config
 import db
 from discord.ext import commands
 
