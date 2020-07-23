@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument
+from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument, MissingPermissions
 
 from administrator.logger import logger
 from administrator.check import NotOwner
@@ -24,7 +24,7 @@ class Help(commands.Cog):
             await ctx.message.add_reaction("\u2753")
         elif isinstance(error, MissingRequiredArgument) or isinstance(error, BadArgument):
             await ctx.message.add_reaction("\u274C")
-        elif isinstance(error, NotOwner):
+        elif isinstance(error, NotOwner) or isinstance(error, MissingPermissions):
             await ctx.message.add_reaction("\u274C")
         else:
             await ctx.send("An error occurred !")

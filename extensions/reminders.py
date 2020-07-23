@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from discord.ext import commands
 from discord import Embed
-from discord.ext.commands import CommandNotFound, BadArgument
+from discord.ext.commands import BadArgument
 from discord.ext import tasks
 
 from administrator.logger import logger
@@ -32,7 +32,7 @@ class Reminders(commands.Cog):
     @commands.group("reminder", pass_context=True)
     async def reminder(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            raise CommandNotFound()
+            await ctx.invoke(self.reminder_help)
 
     @reminder.group("help", pass_context=True)
     async def reminder_help(self, ctx: commands.Context):

@@ -6,4 +6,5 @@ engine = create_engine(config.get("db"))
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 from db.Task import Task
+from db.Greetings import Greetings
 Base.metadata.create_all(engine)
