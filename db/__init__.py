@@ -9,4 +9,5 @@ from db.Task import Task
 from db.Greetings import Greetings
 from db.Presentation import Presentation
 from db.RoRec import RoRec
+from db.Polls import Polls
 Base.metadata.create_all(engine)
