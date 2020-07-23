@@ -1,7 +1,7 @@
 from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument, MissingPermissions, \
-    NoPrivateMessage
+    NoPrivateMessage, CommandError
 
 from administrator import config
 from administrator.logger import logger
@@ -16,30 +16,24 @@ class Help(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def description(self):
+        return "Give help and command list"
+
     @commands.command("help", pass_context=True)
     async def help(self, ctx: commands.Context):
         embed = Embed(title="Help")
-        embed.add_field(name="Poll", value="Create poll with a simple command\n"
-                                           f"`{config.get('prefix')}poll help` for more information", inline=False)
-        embed.add_field(name="Reminders", value="Create reminders\n"
-                                                f"`{config.get('prefix')}reminder help` for more information",
-                        inline=False)
-        permissions = ctx.channel.permissions_for(ctx.author)
-        if permissions.manage_messages:
-            embed.add_field(name="Purge", value="Purge all messages between the command and the next add reaction\n"
-                                                f"`{config.get('prefix')}purge help` for more information", inline=False)
-        if permissions.manage_guild:
-            embed.add_field(name="Greetings", value="Setup join and leave message\n"
-                                                    f"`{config.get('prefix')}greetings help` for more information",
-                            inline=False)
-            embed.add_field(name="Presentation", value="Give role to user who make a presentation in a dedicated "
-                                                       "channel\n"
-                                                       f"`{config.get('prefix')}presentation help` for more information",
-                            inline=False)
-        if await is_owner(ctx):
-            embed.add_field(name="Extension", value="Manage bot extensions\n"
-                                                    f"`{config.get('prefix')}extension help` for more information",
-                            inline=False)
+
+        for c in filter(lambda x: x != "Help", self.bot.cogs):
+            cog = self.bot.cogs[c]
+            try:
+                if await getattr(cog, c.lower()).can_run(ctx):
+                    embed.add_field(name=c,
+                                    value=cog.description() + "\n" +
+                                    f"`{config.get('prefix')}{c.lower()} help` for more information",
+                                    inline=False)
+            except CommandError:
+                pass
+
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()

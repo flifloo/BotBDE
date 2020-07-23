@@ -12,6 +12,9 @@ class Extension(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def description(self):
+        return "Manage bot's extensions"
+
     @commands.group("extension", pass_context=True)
     @commands.check(is_owner)
     async def extension(self, ctx: commands.Context):

@@ -14,6 +14,9 @@ class Presentation(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def description(self):
+        return "Give role to user who make a presentation in a dedicated channel"
+
     @commands.group("presentation", pass_context=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)

@@ -21,6 +21,9 @@ class RoRec(commands.Cog):
         self.bot = bot
         self.edits = {}
 
+    def description(self):
+        return "Create role-reaction message to give role from a reaction add"
+
     @staticmethod
     def get_message(session: db.Session, message_id: int, guild_id: int) -> db.RoRec:
         m = session.query(db.RoRec).filter(db.RoRec.message == message_id and db.RoRec.guild == guild_id).first()

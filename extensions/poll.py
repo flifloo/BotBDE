@@ -19,6 +19,9 @@ class Poll(commands.Cog):
         self.bot = bot
         self.polls = {}
 
+    def description(self):
+        return "Create poll with a simple command"
+
     @commands.group("poll", pass_context=True)
     @commands.guild_only()
     async def poll(self, ctx: commands.Context, name: str, *choices):

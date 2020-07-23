@@ -19,6 +19,9 @@ class Greetings(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def description(self):
+        return "Setup join and leave message"
+
     @commands.group("greetings", pass_context=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)

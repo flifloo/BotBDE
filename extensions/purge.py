@@ -15,6 +15,9 @@ class Purge(commands.Cog):
         self.bot = bot
         self.purges = {}
 
+    def description(self):
+        return "Purge all messages between the command and the next add reaction"
+
     @commands.group("purge", pass_context=True)
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)

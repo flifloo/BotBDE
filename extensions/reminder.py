@@ -25,9 +25,12 @@ def time_pars(s: str) -> timedelta:
     raise BadArgument()
 
 
-class Reminders(commands.Cog):
+class Reminders(commands.Cog, name="Reminder"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    def description(self):
+        return "Create and manage reminders"
 
     @commands.group("reminder", pass_context=True)
     async def reminder(self, ctx: commands.Context):
@@ -56,9 +59,9 @@ class Reminders(commands.Cog):
         hours, seconds = divmod(time.seconds, 3600)
         minutes, seconds = divmod(seconds, 60)
         await ctx.send(f"""Remind you in {f"{time.days}d {hours}h {minutes}m {seconds}s"
-            if time.days > 0 else f"{hours}h {minutes}m {seconds}s"
-            if hours > 0 else f"{minutes}m {seconds}s"
-            if minutes > 0 else f"{seconds}s"} !""")
+        if time.days > 0 else f"{hours}h {minutes}m {seconds}s"
+        if hours > 0 else f"{minutes}m {seconds}s"
+        if minutes > 0 else f"{seconds}s"} !""")
 
     @reminder.group("list", pass_context=True)
     async def reminder_list(self, ctx: commands.Context):
