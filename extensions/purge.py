@@ -17,21 +17,19 @@ class Purge(commands.Cog):
 
     @commands.group("purge", pass_context=True)
     @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            if ctx.message.channel.permissions_for(ctx.author).manage_messages:
-                self.purges[ctx.message.author.id] = ctx.message
-                await ctx.message.add_reaction("\U0001f44d")
+            self.purges[ctx.message.author.id] = ctx.message
+            await ctx.message.add_reaction("\U0001f44d")
 
-                await sleep(2*60)
-                try:
-                    if self.purges[ctx.message.author.id] == ctx.message:
-                        await ctx.message.clear_reactions()
-                        del self.purges[ctx.message.author.id]
-                except:
-                    pass
-            else:
-                await ctx.message.add_reaction("\u274C")
+            await sleep(2*60)
+            try:
+                if self.purges[ctx.message.author.id] == ctx.message:
+                    await ctx.message.clear_reactions()
+                    del self.purges[ctx.message.author.id]
+            except:
+                pass
 
     @purge.group("help", pass_context=True)
     @commands.guild_only()

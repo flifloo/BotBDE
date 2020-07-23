@@ -28,7 +28,7 @@ class Greetings(commands.Cog):
 
     @greetings.group("help", pass_context=True)
     async def greetings_help(self, ctx: commands.Context):
-        embed = Embed(title="greetings help")
+        embed = Embed(title="Greetings help")
         embed.add_field(name="set <join/leave> <message>", value="Set the greetings message\n"
                                                                  "`{}` will be replace by the username",
                         inline=False)

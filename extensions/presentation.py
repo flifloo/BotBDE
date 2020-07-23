@@ -23,7 +23,7 @@ class Presentation(commands.Cog):
 
     @presentation.group("help", pass_context=True)
     async def presentation_help(self, ctx: commands.Context):
-        embed = Embed(title="greetings help", description="Give a role to a new member after a presentation")
+        embed = Embed(title="Presentation help", description="Give a role to a new member after a presentation")
         embed.add_field(name="set <#channel> <@role>", value="Set the presentation channel and the role to give",
                         inline=False)
         embed.add_field(name="disable", value="Disable the auto role give", inline=False)
