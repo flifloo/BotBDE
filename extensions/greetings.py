@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import Member, Embed
+from discord import Member, Embed, Forbidden
 from discord.ext.commands import BadArgument
 
 from administrator.logger import logger
@@ -87,7 +87,11 @@ class Greetings(commands.Cog):
         m = s.query(db.Greetings).filter(db.Greetings.guild == member.guild.id).first()
         s.close()
         if m and m.join_enable:
-            await member.send(embed=m.join_embed(member.guild.name, str(member)))
+            embed = m.join_embed(member.guild.name, str(member))
+            try:
+                await member.send(embed=embed)
+            except Forbidden:
+                await member.guild.system_channel.send(member.mention, embed=embed)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: Member):
