@@ -4,7 +4,7 @@ from discord.ext.commands import BadArgument
 
 from administrator import db
 from administrator.logger import logger
-from administrator.utils import time_pars
+from administrator.utils import time_pars, seconds_to_time_string
 
 extension_name = "warn"
 logger = logger.getChild(extension_name)
@@ -51,13 +51,16 @@ class Warn(commands.Cog):
         embed.add_field(name="add <user> <description>", value="Send a warn to a user", inline=False)
         embed.add_field(name="remove <user> <number>", value="Remove a number of warn to a user", inline=False)
         embed.add_field(name="purge <user>", value="Remove all warn of a user", inline=False)
-        embed.add_field(name="list [user]", value="List warn of the guild or a specified user", inline=False)
+        embed.add_field(name="list [user#discriminator|actions]", value="List warn of the guild or a specified user\n"
+                                                                        "If you specify `actions` instead of a user, "
+                                                                        "all the actions of the guild will be listed",
+                        inline=False)
         embed.add_field(name="action <count> <action>", value="Set an action for a count of warn\n"
                                                               "Actions: `mute<time>`, `kick`, `ban[time]`, `nothing`\n"
                                                               "Time: `?D?H?M?S`\n"
                                                               "Example: `action 1 mute1H` to mute someone for one hour "
                                                               "after only one war\n"
-                                                              "or `action 3 ban3D` to ban someone for one day after 3 "
+                                                              "or `action 3 ban1D` to ban someone for one day after 3 "
                                                               "warns", inline=False)
         await ctx.send(embed=embed)
 
@@ -108,7 +111,13 @@ class Warn(commands.Cog):
         embed = Embed(title="Warn list")
         ws = {}
 
-        if user:
+        if user == "actions":
+            embed.title = "Actions list"
+            for a in s.query(db.WarnAction).filter(db.WarnAction.guild == ctx.guild.id).order_by(db.WarnAction.count)\
+                    .all():
+                action = f"{a.action} for {seconds_to_time_string(a.duration)}" if a.duration else a.action
+                embed.add_field(name=f"{a.count} warn(s)", value=action, inline=False)
+        elif user:
             target = self.get_target(ctx, user)
             ws[target.id] = s.query(db.Warn).filter(db.Warn.guild == ctx.guild.id, db.Warn.user == target.id).all()
         else:

@@ -8,7 +8,7 @@ from discord.ext import tasks
 
 from administrator.logger import logger
 from administrator import db
-from administrator.utils import time_pars
+from administrator.utils import time_pars, seconds_to_time_string
 
 extension_name = "reminders"
 logger = logger.getChild(extension_name)
@@ -45,12 +45,7 @@ class Reminders(commands.Cog, name="Reminder"):
         s.commit()
         s.close()
 
-        hours, seconds = divmod(time.seconds, 3600)
-        minutes, seconds = divmod(seconds, 60)
-        await ctx.send(f"""Remind you in {f"{time.days}d {hours}h {minutes}m {seconds}s"
-        if time.days > 0 else f"{hours}h {minutes}m {seconds}s"
-        if hours > 0 else f"{minutes}m {seconds}s"
-        if minutes > 0 else f"{seconds}s"} !""")
+        await ctx.send(f"""Remind you in {seconds_to_time_string(time.total_seconds())} !""")
 
     @reminder.group("list", pass_context=True)
     async def reminder_list(self, ctx: commands.Context):
