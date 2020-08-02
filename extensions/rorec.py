@@ -19,7 +19,6 @@ channel_id_re = re.compile(r"^<#([0-9]+)>$")
 class RoRec(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.edits = {}
 
     def description(self):
         return "Create role-reaction message to give role from a reaction add"
@@ -54,8 +53,8 @@ class RoRec(commands.Cog):
                         value="Create a new role-reaction message on the mentioned channel.\n"
                               "You can specify a description and if you can pick only one role",
                         inline=False)
-        embed.add_field(name="edit <message id>", value="Edit a role-reaction message\n"
-                                                        "You can also add a ... reaction on the message to edit",
+        embed.add_field(name="edit <message id> <title> [description}", value="Edit a role-reaction message title and "
+                                                                              "description",
                         inline=False)
         embed.add_field(name="set <message_id> <emoji> <@role1> [@role2] ...",
                         value="Add/edit a emoji with linked roles", inline=False)
@@ -89,23 +88,17 @@ class RoRec(commands.Cog):
         await ctx.message.add_reaction("\U0001f44d")
 
     @rorec.group("edit", pass_context=True)
-    async def rorec_edit(self, ctx: commands.Context, message_id: int):
+    async def rorec_edit(self, ctx: commands.Context, message_id: int, title: str, description: str = None):
         s = db.Session()
-        m = s.query(db.RoRec).filter(db.RoRec.message == message_id and db.RoRec.guild == ctx.guild.id).first()
+        m = self.get_message(s, message_id, ctx.guild.id)
         s.close()
-        if not m or message_id in self.edits:
-            raise BadArgument()
 
-        self.edits[message_id] = ctx
-        embed = Embed(title="Edit role-reaction message")
-        embed.add_field(name="", value="... Set emoji\n"
-                                       "... Remove emoji\n"
-                                       "... Switch only one role rule\n"
-                                       "... Delete message\n"
-                                       "... Exit")
-        message = await ctx.send(embed=embed)
-        for i in []:
-            await message.add_reaction(i)
+        message = await ctx.guild.get_channel(m.channel).fetch_message(m.message)
+        embed: Embed = message.embeds[0]
+        embed.title = title
+        embed.description = description
+        await message.edit(embed=embed)
+        await ctx.message.add_reaction("\U0001f44d")
 
     @rorec.group("set", pass_context=True)
     async def rorec_set(self, ctx: commands.Context, message_id: int, emoji: str):
