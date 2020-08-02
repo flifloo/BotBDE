@@ -18,6 +18,20 @@ class Warn(commands.Cog):
         return "Send warning to user and make custom action after a number of warn"
 
     @staticmethod
+    async def check_warn(ctx: commands.Context, target: Member):
+        s = db.Session()
+        c = s.query(db.Warn).filter(db.Warn.guild == ctx.guild.id, db.Warn.user == target.id).count()
+        a = s.query(db.WarnAction).filter(db.WarnAction.guild == ctx.guild.id, db.WarnAction.count == c).first()
+        if a:
+            reason = f"Action after {c} warns"
+            if a.action == "kick":
+                await target.kick(reason=reason)
+            elif a.action == "ban":
+                await target.ban(reason=reason)
+            elif a.action == "mute":
+                pass  # Integration with upcoming ban & mute extension
+
+    @staticmethod
     def get_target(ctx: commands.Context, user: str) -> Member:
         users = {str(m): m for m in ctx.guild.members}
         if user not in users:
@@ -64,6 +78,7 @@ class Warn(commands.Cog):
             await ctx.send("Fail to send warn notification to the user, DM close :warning:")
         else:
             await ctx.message.add_reaction("\U0001f44d")
+        await self.check_warn(ctx, target)
 
     @warn.group("remove", pass_context=True)
     async def warn_remove(self, ctx: commands.Context, user: str, number: int):
@@ -127,11 +142,12 @@ class Warn(commands.Cog):
         else:
             time = None
             if action.startswith("mute"):
-                time = time_pars(action.replace("mute", ""))
+                time = time_pars(action.replace("mute", "")).total_seconds()
                 action = "mute"
             elif action.startswith("ban"):
-                time = time_pars(action.replace("ban", ""))
-                action = "ban"
+                if action[3:]:
+                    time = time_pars(action.replace("ban", "")).total_seconds()
+                    action = "ban"
             if a:
                 a.action = action
                 a.duration = time

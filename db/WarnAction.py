@@ -12,9 +12,8 @@ class WarnAction(Base):
     action = Column(String, nullable=False)
     duration = Column(BigInteger)
 
-    def __init__(self, guild: int, count: int, action: str, duration: timedelta = None):
+    def __init__(self, guild: int, count: int, action: str, duration: float = None):
         self.guild = guild
         self.count = count
         self.action = action
-        if duration:
-            self.duration = duration.total_seconds()
+        self.duration = duration
