@@ -1,16 +1,13 @@
-import re
-
 from discord import Embed, Forbidden, Member, Guild
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
 from administrator import db
 from administrator.logger import logger
+from administrator.utils import time_pars
 
 extension_name = "warn"
 logger = logger.getChild(extension_name)
-
-channel_id_re = re.compile(r"^<#([0-9]+)>$")
 
 
 class Warn(commands.Cog):
@@ -41,6 +38,13 @@ class Warn(commands.Cog):
         embed.add_field(name="remove <user> <number>", value="Remove a number of warn to a user", inline=False)
         embed.add_field(name="purge <user>", value="Remove all warn of a user", inline=False)
         embed.add_field(name="list [user]", value="List warn of the guild or a specified user", inline=False)
+        embed.add_field(name="action <count> <action>", value="Set an action for a count of warn\n"
+                                                              "Actions: `mute<time>`, `kick`, `ban[time]`, `nothing`\n"
+                                                              "Time: `?D?H?M?S`\n"
+                                                              "Example: `action 1 mute1H` to mute someone for one hour "
+                                                              "after only one war\n"
+                                                              "or `action 3 ban3D` to ban someone for one day after 3 "
+                                                              "warns", inline=False)
         await ctx.send(embed=embed)
 
     @warn.group("add", pass_context=True)
@@ -100,16 +104,51 @@ class Warn(commands.Cog):
         s.close()
 
         for u in ws:
-            warns = [f"{w.date.strftime('%d/%m/%Y %H:%M')} - {w.description}" for w in ws[u]]
+            warns = [f"{self.bot.get_user(w.author).mention} - {w.date.strftime('%d/%m/%Y %H:%M')}```{w.description}```"
+                     for w in ws[u]]
             embed.add_field(name=self.bot.get_user(u), value="\n".join(warns), inline=False)
 
         await ctx.send(embed=embed)
+
+    @warn.group("action", pass_context=True)
+    async def warn_action(self, ctx: commands.Context, count: int, action: str):
+        if count <= 0 or\
+                (action not in ["kick", "nothing"] and not action.startswith("mute") and not action.startswith("ban")):
+            raise BadArgument()
+
+        s = db.Session()
+        a = s.query(db.WarnAction).filter(db.WarnAction.guild == ctx.guild.id, db.WarnAction.count == count).first()
+
+        if action == "nothing":
+            if a:
+                s.delete(a)
+            else:
+                raise BadArgument()
+        else:
+            time = None
+            if action.startswith("mute"):
+                time = time_pars(action.replace("mute", ""))
+                action = "mute"
+            elif action.startswith("ban"):
+                time = time_pars(action.replace("ban", ""))
+                action = "ban"
+            if a:
+                a.action = action
+                a.duration = time
+            else:
+                s.add(db.WarnAction(ctx.guild.id, count, action, time))
+
+        s.commit()
+        s.close()
+        await ctx.message.add_reaction("\U0001f44d")
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: Guild):
         s = db.Session()
         for w in s.query(db.Warn).filter(db.Warn.guild == guild.id).all():
             s.delete(w)
+        for a in s.query(db.WarnAction).filter(db.WarnAction.guild == guild.id).all():
+            s.delete(a)
         s.commit()
         s.close()
 
