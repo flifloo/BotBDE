@@ -10,4 +10,5 @@ from db.Greetings import Greetings
 from db.Presentation import Presentation
 from db.RoRec import RoRec
 from db.Polls import Polls
+from db.Warn import Warn
 Base.metadata.create_all(engine)
