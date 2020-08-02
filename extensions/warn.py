@@ -1,6 +1,6 @@
 import re
 
-from discord import Embed, Forbidden, Member
+from discord import Embed, Forbidden, Member, Guild
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
@@ -104,6 +104,14 @@ class Warn(commands.Cog):
             embed.add_field(name=self.bot.get_user(u), value="\n".join(warns), inline=False)
 
         await ctx.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: Guild):
+        s = db.Session()
+        for w in s.query(db.Warn).filter(db.Warn.guild == guild.id).all():
+            s.delete(w)
+        s.commit()
+        s.close()
 
 
 def setup(bot):
