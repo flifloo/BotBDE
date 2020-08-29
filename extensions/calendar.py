@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from operator import xor
 
 import ics
@@ -146,16 +146,9 @@ class Calendar(commands.Cog):
                 date = datetime.strptime(day, "%d/%m/%Y").date()
             except ValueError:
                 raise BadArgument()
-        date -= timedelta(days=date.weekday())
-        embed = Embed(title=f"Week calendar: {c.name}",
-                      description=f"{date.strftime('%d/%m/%Y')} - {(date + timedelta(days=4)).strftime('%d/%m/%Y')}")
-        for d in range(5):
-            events = []
-            for e in c.events(date, date):
-                events.append(f"*{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}*: "
-                              f"**{e.name}** | {e.location} - {e.organizer}")
-            embed.add_field(name=date.strftime("%d/%m/%Y"), value="\n".join(events) or "Nothing !", inline=False)
-            date = date + timedelta(days=1)
+
+        embed = c.week_embed(date)
+
         s = db.Session()
         if s.is_modified(c):
             s.add(c)
@@ -241,10 +234,19 @@ class Calendar(commands.Cog):
         s = db.Session()
         now = datetime.now().astimezone(tz=None)
         for c in s.query(db.Calendar).all():
+            if now.isoweekday() not in [5, 6] and now.time() >= time(hour=20) and\
+                    c.last_notify.astimezone(tz=None) < now.replace(hour=20, minute=00):
+                c.last_notify = datetime.now()
+                for n in c.calendars_notify:
+                    await n.next_day_resume(self.bot)
+
             for e in c.events(now.date(), now.date()):
                 if xor(c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=30) <= now,
                        c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=10) <= now):
-                    self.bot.loop.create_task(c.notify(self.bot, e))
+                    c.last_notify = datetime.now()
+                    for n in c.calendars_notify:
+                        await n.notify(self.bot, e)
+                    break
             if s.is_modified(c):
                 s.add(c)
                 s.commit()
