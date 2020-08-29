@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from operator import xor
 
 import ics
@@ -239,12 +239,12 @@ class Calendar(commands.Cog):
     @tasks.loop(minutes=1)
     async def calendar_notify_loop(self):
         s = db.Session()
-        now = datetime.now().replace(tzinfo=timezone.utc).astimezone(tz=None)
+        now = datetime.now().astimezone(tz=None)
         for c in s.query(db.Calendar).all():
             for e in c.events(now.date(), now.date()):
-                if xor(c.last_notify < e.begin - timedelta(minutes=30) <= now,
-                       c.last_notify < e.begin - timedelta(minutes=10) <= now):
-                    self.bot.loop.create_task(await c.notify(self.bot, e))
+                if xor(c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=30) <= now,
+                       c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=10) <= now):
+                    self.bot.loop.create_task(c.notify(self.bot, e))
             if s.is_modified(c):
                 s.add(c)
                 s.commit()

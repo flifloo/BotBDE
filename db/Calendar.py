@@ -52,11 +52,12 @@ class Calendar(Base):
     def events(self, first_date: datetime.date, last_date: datetime.date) -> [ics.Event]:
         events = []
         for e in sorted(list(self.cal().events), key=lambda x: x.begin):
-            e.begin = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
-            e.end = e.begin.replace(tzinfo=timezone.utc).astimezone(tz=None)
+            e.begin = e.begin.astimezone(tz=None)
+            e.end = e.end.astimezone(tz=None)
             e.organizer = name_re.findall(e.description)[0]
-            events.append(e)
-        return list(filter(lambda x: x.begin.date() >= first_date and x.end.date() <= last_date, events))
+            if e.begin.date() >= first_date and e.end.date() <= last_date:
+                events.append(e)
+        return list(events)
 
     async def notify(self, bot: Bot, event: ics.Event):
         self.last_notify = datetime.now()
@@ -77,4 +78,6 @@ class CalendarNotify(Base):
         embed = Embed(title="Event is coming !")
         embed.add_field(name=f"{event.begin.strftime('%H:%M')} - {event.end.strftime('%H:%M')}",
                         value=f"{event.name} | {event.location} - {event.organizer}")
-        await bot.get_channel(self.channel).send(embed=embed)
+        channel = bot.get_channel(self.channel)
+        if channel:
+            await channel.send(embed=embed)
