@@ -59,6 +59,15 @@ class Calendar(Base):
                 events.append(e)
         return list(events)
 
+    def day_embed(self, date: datetime.date):
+        embed = Embed(title=f"Day calendar: {self.name}", description=date.strftime("%d/%m/%Y"))
+
+        for e in self.events(date, date):
+            embed.add_field(name=f"{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}",
+                            value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
+
+        return embed
+
     def week_embed(self, date: datetime.date):
         date -= timedelta(days=date.weekday())
         embed = Embed(title=f"Week calendar: {self.name}",
@@ -93,6 +102,11 @@ class CalendarNotify(Base):
             await channel.send(embed=embed)
 
     async def next_day_resume(self, bot: Bot):
+        channel = bot.get_channel(self.channel)
+        if channel:
+            await channel.send(embed=self.calendar.day_embed((datetime.now() + timedelta(days=1)).date()))
+
+    async def next_week_resume(self, bot: Bot):
         channel = bot.get_channel(self.channel)
         if channel:
             await channel.send(embed=self.calendar.week_embed((datetime.now() + timedelta(days=1)).date()))

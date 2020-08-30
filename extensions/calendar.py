@@ -124,10 +124,9 @@ class Calendar(commands.Cog):
                 date = datetime.strptime(day, "%d/%m/%Y").date()
             except ValueError:
                 raise BadArgument()
-        embed = Embed(title=f"Day calendar: {c.name}", description=date.strftime("%d/%m/%Y"))
-        for e in c.events(date, date):
-            embed.add_field(name=f"{e.begin.strftime('%H:%M')} - {e.end.strftime('%H:%M')}",
-                            value=f"{e.name} | {e.location} - {e.organizer}", inline=False)
+
+        embed = c.day_embed(date)
+
         s = db.Session()
         if s.is_modified(c):
             s.add(c)
@@ -233,23 +232,32 @@ class Calendar(commands.Cog):
     async def calendar_notify_loop(self):
         s = db.Session()
         now = datetime.now().astimezone(tz=None)
+
         for c in s.query(db.Calendar).all():
-            if now.isoweekday() not in [5, 6] and now.time() >= time(hour=20) and\
-                    c.last_notify.astimezone(tz=None) < now.replace(hour=20, minute=00):
-                c.last_notify = datetime.now()
+            if now.time() >= time(hour=20) and c.last_notify.astimezone(tz=None) < now.replace(hour=20, minute=00) and\
+                    now.isoweekday() not in [5, 6]:
+                c.last_notify = now
+                s.add(c)
+                s.commit()
+
                 for n in c.calendars_notify:
-                    await n.next_day_resume(self.bot)
+                    if now.isoweekday() == 7:
+                        await n.next_week_resume(self.bot)
+                    else:
+                        await n.next_day_resume(self.bot)
 
             for e in c.events(now.date(), now.date()):
                 if xor(c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=30) <= now,
                        c.last_notify.astimezone(tz=None) < e.begin - timedelta(minutes=10) <= now):
-                    c.last_notify = datetime.now()
+                    c.last_notify = now
+                    s.add(c)
+                    s.commit()
+
                     for n in c.calendars_notify:
                         await n.notify(self.bot, e)
+
                     break
-            if s.is_modified(c):
-                s.add(c)
-                s.commit()
+
         s.close()
 
     @commands.Cog.listener()
