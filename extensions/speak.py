@@ -26,12 +26,12 @@ class Speak(commands.Cog):
 
     @commands.group("speak", pass_context=True)
     @commands.guild_only()
+    @commands.has_guild_permissions(mute_members=True)
     async def speak(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             raise CommandNotFound
 
     @speak.group("help", pass_context=True)
-    @commands.guild_only()
     async def speak_help(self, ctx: commands.Context):
         embed = Embed(title="Speak help")
         embed.add_field(name="speak setup [strict]",
@@ -41,41 +41,35 @@ class Speak(commands.Cog):
         await ctx.send(embed=embed)
 
     @speak.group("setup", pass_context=True)
-    @commands.guild_only()
     async def speak_setup(self, ctx: commands.Context, *args):
-        if not ctx.author.voice.channel.permissions_for(ctx.author).mute_members:
-            await ctx.message.add_reaction("\u274C")
-        else:
-            self.voice_chan = ctx.author.voice.channel.id
-            embed = Embed(title="Speak \U0001f508")
-            embed.add_field(name="Waiting list \u23f3", value="Nobody", inline=False)
-            embed.add_field(name="Reactions",
-                            value="\U0001f5e3 Speak !\n"
-                                  "\u2757 React to speaker\n"
-                                  "\u27A1 Next\n"
-                                  "\U0001F513 Strict\n"
-                                  "\U0001F507 Mute\n"
-                                  "\U0001F50A Unmute\n"
-                                  "\u274C Clear the speak\n"
-                                  "Remove your reaction to remove from list",
-                            inline=False)
-            self.voice_message = await ctx.send(embed=embed)
-            for reaction in ["\U0001f5e3", "\u2757", "\u27A1", "\U0001F512", "\U0001F507", "\U0001F50A", "\u274C"]:
-                await self.voice_message.add_reaction(reaction)
-            self.voice_message = await self.voice_message.channel.fetch_message(self.voice_message.id)
+        self.voice_chan = ctx.author.voice.channel.id
+        embed = Embed(title="Speak \U0001f508")
+        embed.add_field(name="Waiting list \u23f3", value="Nobody", inline=False)
+        embed.add_field(name="Reactions",
+                        value="\U0001f5e3 Speak !\n"
+                              "\u2757 React to speaker\n"
+                              "\u27A1 Next\n"
+                              "\U0001F513 Strict\n"
+                              "\U0001F507 Mute\n"
+                              "\U0001F50A Unmute\n"
+                              "\u274C Clear the speak\n"
+                              "Remove your reaction to remove from list",
+                        inline=False)
+        self.voice_message = await ctx.send(embed=embed)
+        for reaction in ["\U0001f5e3", "\u2757", "\u27A1", "\U0001F512", "\U0001F507", "\U0001F50A", "\u274C"]:
+            await self.voice_message.add_reaction(reaction)
+        self.voice_message = await self.voice_message.channel.fetch_message(self.voice_message.id)
 
     @speak.group("mute", pass_context=True)
-    @commands.guild_only()
     async def speak_mute(self, ctx: commands.Context):
-        if not self.mute(True, ctx.author):
+        if not await self.mute(True, ctx.author):
             await ctx.message.add_reaction("\u274C")
         else:
             await ctx.message.add_reaction("\U0001f44d")
 
     @speak.group("unmute", pass_context=True)
-    @commands.guild_only()
     async def speak_unmute(self, ctx: commands.Context):
-        if not self.mute(False, ctx.author):
+        if not await self.mute(False, ctx.author):
             await ctx.message.add_reaction("\u274C")
         else:
             await ctx.message.add_reaction("\U0001f44d")
@@ -83,13 +77,13 @@ class Speak(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         if self.voice_chan and self.strict and \
-                (before is None or before.channel is None or before.channel.id != self.voice_chan) and\
+                (before is None or before.channel is None or before.channel.id != self.voice_chan) and \
                 (after is not None and after.channel is not None and after.channel.id == self.voice_chan) and \
                 not (self.last_speaker and member.id == self.last_speaker) and \
                 not (self.reaction and member.id == self.last_reaction):
             await member.edit(mute=True)
         elif self.voice_chan and \
-                (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and\
+                (before is not None and before.channel is not None and before.channel.id == self.voice_chan) and \
                 (after is not None and after.channel is not None and after.channel.id != self.voice_chan):
             await member.edit(mute=False)
 
@@ -244,25 +238,13 @@ class Speak(commands.Cog):
             await self.voice_message.edit(embed=embed)
 
     async def mute(self, state: bool, user: Member) -> bool:
-        if user.voice is None or user.voice.channel is None or \
-                not user.voice.channel.permissions_for(user).mute_members:
+        if user.voice is None or user.voice.channel is None:
             return False
         else:
             for client in user.voice.channel.members:
                 if not (client == user and state) and not client.bot:
                     await client.edit(mute=state)
             return True
-
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        if ctx.invoked_with == extension_name or \
-                (ctx.command.root_parent is not None and ctx.command.root_parent.name == extension_name):
-            if isinstance(error, CommandNotFound):
-                await ctx.message.add_reaction("\u2753")
-                await ctx.message.delete(delay=30)
-            else:
-                await ctx.send("An error occurred !")
-                raise error
 
 
 def setup(bot):
