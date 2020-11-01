@@ -2,7 +2,7 @@ from discord.ext import commands
 from discord import Member, VoiceState, Embed, Reaction, Guild
 from discord.ext.commands import CommandNotFound
 
-from bot_bde.logger import logger
+from administrator.logger import logger
 
 
 extension_name = "speak"
@@ -20,6 +20,9 @@ class Speak(commands.Cog):
         self.last_reaction = None
         self.voice_message = None
         self.last_message = None
+
+    def description(self):
+        return "Speech manager"
 
     @commands.group("speak", pass_context=True)
     @commands.guild_only()
