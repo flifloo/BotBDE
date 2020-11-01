@@ -10,6 +10,7 @@ from administrator.logger import logger
 extension_name = "PCP"
 logger = logger.getChild(extension_name)
 group_re = re.compile(r"(G[0-9]S[0-9]|ASPE|LP DEVOPS|LP ESSIR|LP SID)")
+msg_url_re = re.compile(r"https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)")
 
 
 class PCP(commands.Cog):
@@ -38,18 +39,35 @@ class PCP(commands.Cog):
 
             await ctx.author.add_roles(role)
             await ctx.message.add_reaction("\U0001f44d")
-            return
         elif ctx.invoked_subcommand is None:
             await ctx.invoke(self.pcp_help)
 
     @pcp.group("help", pass_context=True)
-    @commands.guild_only()
     async def pcp_help(self, ctx: commands.Context):
         embed = Embed(title="PCP help")
         embed.add_field(name="pcp <group>", value="Join your group", inline=False)
         if await self.pcp_group.can_run(ctx):
             embed.add_field(name="pcp group", value="Manage PCP group", inline=False)
         await ctx.send(embed=embed)
+
+    @pcp.group("pin", pass_context=True)
+    async def pcp_pin(self, ctx: commands.Context, url: str):
+        r = msg_url_re.fullmatch(url)
+        if not r:
+            raise BadArgument()
+        r = r.groups()
+
+        c = ctx.guild.get_channel(int(r[0]))
+        if not c:
+            raise BadArgument()
+
+        m = await c.fetch_message(int(r[1]))
+        if not m:
+            raise BadArgument()
+
+        await m.pin()
+
+        await ctx.send(f"{ctx.author.mention} pinned a message")
 
     @pcp.group("group", pass_context=True)
     @commands.has_permissions(administrator=True)
