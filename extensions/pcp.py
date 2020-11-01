@@ -30,7 +30,7 @@ class PCP(commands.Cog):
             if not role:
                 raise BadArgument()
 
-            roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()), ctx.author.roles))
+            roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()) or r.name == "nouveau venu", ctx.author.roles))
             if role.name in map(lambda r: r.name, roles):
                 raise BadArgument()
             elif roles:
