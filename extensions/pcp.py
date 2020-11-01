@@ -1,6 +1,6 @@
 import re
 
-from discord import Embed
+from discord import Embed, Member
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
@@ -62,6 +62,22 @@ class PCP(commands.Cog):
         embed = Embed(title="PCP group help")
         embed.add_field(name="pcp group subject", value="Manage subjects for group", inline=False)
         await ctx.send(embed=embed)
+
+    @pcp_group.group("fix_vocal", pass_context=True)
+    async def pcp_group_fix_vocal(self, ctx: commands.Context):
+        for cat in filter(lambda c: group_re.fullmatch(c.name.upper()), ctx.guild.categories):
+            await ctx.send(f"{cat.name}...")
+            teachers = []
+            for t in cat.text_channels:
+                for p in t.overwrites:
+                    if isinstance(p, Member):
+                        teachers.append(p)
+            voc = next(filter(lambda c: c.name == "vocal-1", cat.voice_channels), None)
+            for t in teachers:
+                await voc.set_permissions(t, view_channel=True)
+            await ctx.send(f"{cat.name} done")
+        await ctx.message.add_reaction("\U0001f44d")
+
 
     @pcp_group.group("subject", pass_context=True)
     async def pcp_group_subject(self, ctx: commands.Context):
