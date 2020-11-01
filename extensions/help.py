@@ -1,11 +1,10 @@
 from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadArgument, MissingPermissions, \
-    NoPrivateMessage, CommandError
+    NoPrivateMessage, CommandError, NotOwner
 
 from administrator import config
 from administrator.logger import logger
-from administrator.check import NotOwner, is_owner
 
 
 extension_name = "help"
