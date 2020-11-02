@@ -12,4 +12,5 @@ from db.RoRec import RoRec
 from db.Polls import Polls
 from db.Warn import Warn
 from db.WarnAction import WarnAction
+from db.InviteRole import InviteRole
 Base.metadata.create_all(engine)
