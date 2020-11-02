@@ -72,10 +72,6 @@ class Invite(commands.Cog):
             self.invites[g.id] = await g.invites()
 
     @commands.Cog.listener()
-    async def on_ready(self):
-        await self.update_invites()
-
-    @commands.Cog.listener()
     async def on_member_join(self, member: Member):
         user_invites = await member.guild.invites()
         for i in self.invites[member.guild.id]:
@@ -92,6 +88,10 @@ class Invite(commands.Cog):
         self.invites[member.guild.id] = user_invites
 
     @commands.Cog.listener()
+    async def on_invite_create(self, invite):
+        self.invites[invite.guild.id] = await invite.guild.invites()
+
+    @commands.Cog.listener()
     async def on_invite_delete(self, invite):
         s = db.Session()
         invite_role = s.query(db.InviteRole).get({"guild_id": invite.guild.id, "invite_code": invite.code})
@@ -99,6 +99,7 @@ class Invite(commands.Cog):
             s.delete(invite_role)
             s.commit()
         s.close()
+        self.invites[invite.guild.id] = await invite.guild.invites()
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: Guild):
