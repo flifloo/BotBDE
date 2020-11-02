@@ -39,9 +39,15 @@ class Utils(commands.Cog):
         command = ctx.message.content[start+3:end]
         try:
             exec("async def __ex(self, ctx):\n" + command.replace("\n", "\n    "))
-            await ctx.send(await locals()["__ex"](self, ctx))
+            out = str(await locals()["__ex"](self, ctx))
+            if len(out) > 1994:
+                while out:
+                    await ctx.send(f"```{out[:1994]}```")
+                    out = out[1994:]
+            else:
+                await ctx.send(f"```{out}```")
         except Exception as e:
-            await ctx.send(f"{e.__class__.__name__}: {e}")
+            await ctx.send(f"```{e.__class__.__name__}: {e}```")
 
     @commands.group("ping", pass_context=True)
     async def ping(self, ctx: commands.Context):

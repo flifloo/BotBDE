@@ -9,7 +9,7 @@ from administrator.logger import logger
 
 extension_name = "PCP"
 logger = logger.getChild(extension_name)
-group_re = re.compile(r"(G[0-9]S[0-9]|ASPE|LP DEVOPS2?|LP ESSIR|LP SID)")
+group_re = re.compile(r"(G[0-9]S[0-9]|ASPE|LP DEVOPS|LP ESSIR|LP SID)")
 msg_url_re = re.compile(r"https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)")
 role_mention_re = re.compile(r"<@&[0-9]+>")
 user_mention_re = re.compile(r"<@![0-9]+>")
