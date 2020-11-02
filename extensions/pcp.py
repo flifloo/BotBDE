@@ -27,19 +27,23 @@ class PCP(commands.Cog):
     async def pcp(self, ctx: commands.Context):
         group = ctx.message.content.replace(f"{ctx.prefix}{ctx.command} ", "").upper()
         if group and group_re.fullmatch(group):
+            await ctx.message.add_reaction("\U000023f3")
             role = next(filter(lambda r: r.name.upper() == group, ctx.guild.roles), None)
 
             if not role:
+                await ctx.message.remove_reaction("\U000023f3", self.bot.user)
                 raise BadArgument()
 
             roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()) or r.name == "nouveau venu",
                                 ctx.author.roles))
             if role.name in map(lambda r: r.name, roles):
+                await ctx.message.remove_reaction("\U000023f3", self.bot.user)
                 raise BadArgument()
             elif roles:
                 await ctx.author.remove_roles(*roles)
 
-            await ctx.author.add_roles(role)
+            await ctx.author.add_roles(role, atomic=True)
+            await ctx.message.remove_reaction("\U000023f3", self.bot.user)
             await ctx.message.add_reaction("\U0001f44d")
         elif ctx.invoked_subcommand is None:
             await ctx.invoke(self.pcp_help)
@@ -176,7 +180,7 @@ class PCP(commands.Cog):
         command = ctx.message.content[start+3:end]
         try:
             exec("async def __ex(self, ctx):\n" + command.replace("\n", "\n    "))
-            await locals()["__ex"](self, ctx)
+            await ctx.send(await locals()["__ex"](self, ctx))
         except Exception as e:
             await ctx.send(f"{e.__class__.__name__}: {e}")
 
