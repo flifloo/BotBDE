@@ -72,6 +72,10 @@ class Invite(commands.Cog):
             self.invites[g.id] = await g.invites()
 
     @commands.Cog.listener()
+    async def on_ready(self):
+        await self.update_invites()
+
+    @commands.Cog.listener()
     async def on_member_join(self, member: Member):
         user_invites = await member.guild.invites()
         for i in self.invites[member.guild.id]:
