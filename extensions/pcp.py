@@ -172,18 +172,6 @@ class PCP(commands.Cog):
 
         await ctx.message.add_reaction("\U0001f44d")
 
-    @pcp.group("eval", pass_context=True)
-    @commands.is_owner()
-    async def eval(self, ctx: commands.Context):
-        start = ctx.message.content.find("```")
-        end = ctx.message.content.find("```", start+3)
-        command = ctx.message.content[start+3:end]
-        try:
-            exec("async def __ex(self, ctx):\n" + command.replace("\n", "\n    "))
-            await ctx.send(await locals()["__ex"](self, ctx))
-        except Exception as e:
-            await ctx.send(f"{e.__class__.__name__}: {e}")
-
 
 def setup(bot):
     logger.info(f"Loading...")
