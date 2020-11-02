@@ -11,12 +11,13 @@ extension_name = "PCP"
 logger = logger.getChild(extension_name)
 group_re = re.compile(r"(G[0-9]S[0-9]|ASPE|LP DEVOPS|LP ESSIR|LP SID)")
 msg_url_re = re.compile(r"https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)")
+role_mention_re = re.compile(r"<@&[0-9]+>")
+user_mention_re = re.compile(r"<@![0-9]+>")
 
 
 class PCP(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.polls = {}
 
     def description(self):
         return "PCP Univ Lyon 1"
@@ -31,7 +32,8 @@ class PCP(commands.Cog):
             if not role:
                 raise BadArgument()
 
-            roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()) or r.name == "nouveau venu", ctx.author.roles))
+            roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()) or r.name == "nouveau venu",
+                                ctx.author.roles))
             if role.name in map(lambda r: r.name, roles):
                 raise BadArgument()
             elif roles:
@@ -78,6 +80,8 @@ class PCP(commands.Cog):
     @pcp_group.group("help", pass_context=True)
     async def pcp_group_help(self, ctx: commands.Context):
         embed = Embed(title="PCP group help")
+        embed.add_field(name="pcp group fix_vocal",
+                        value="Check all text channel permissions to reapply vocal permissions", inline=False)
         embed.add_field(name="pcp group subject", value="Manage subjects for group", inline=False)
         await ctx.send(embed=embed)
 
@@ -96,7 +100,6 @@ class PCP(commands.Cog):
             await ctx.send(f"{cat.name} done")
         await ctx.message.add_reaction("\U0001f44d")
 
-
     @pcp_group.group("subject", pass_context=True)
     async def pcp_group_subject(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
@@ -107,21 +110,24 @@ class PCP(commands.Cog):
         embed = Embed(title="PCP group subject help")
         embed.add_field(name="pcp group subject add <name> <@group> [@teacher]", value="Add a subject to a group",
                         inline=False)
+        embed.add_field(name="pcp group subject bulk <@group> [subject1] [subject2] ...", value="Bulk subject add",
+                        inline=False)
         embed.add_field(name="pcp group subject remove <name> <@group>", value="Remove a subject to a group",
                         inline=False)
         await ctx.send(embed=embed)
 
     @pcp_group_subject.group("add", pass_context=True)
-    async def pcp_group_subject_add(self, ctx: commands.Context, name: str):
-        if len(ctx.message.role_mentions) != 1:
+    async def pcp_group_subject_add(self, ctx: commands.Context, name: str, group: str, teacher: str = None):
+        if not role_mention_re.fullmatch(group):
             raise BadArgument()
-        if len(ctx.message.mentions) > 1:
+        if teacher and not user_mention_re.fullmatch(teacher):
             raise BadArgument()
-        elif ctx.message.mentions and\
+        elif teacher and\
                 not next(filter(lambda r: r.name == "professeurs", ctx.message.mentions[0].roles), None):
             raise BadArgument()
 
-        cat = next(filter(lambda c: c.name.upper() == ctx.message.role_mentions[0].name.upper(), ctx.guild.categories), None)
+        cat = next(filter(lambda c: c.name.upper() == ctx.message.role_mentions[0].name.upper(),
+                          ctx.guild.categories), None)
         if not cat:
             raise BadArgument()
 
@@ -139,20 +145,23 @@ class PCP(commands.Cog):
 
     @pcp_group_subject.group("bulk", pass_context=True)
     async def pcp_group_subject_bulk(self, ctx: commands.Context, mention, *names):
+        if not role_mention_re.fullmatch(mention):
+            raise BadArgument()
         for n in names:
             await ctx.invoke(self.pcp_group_subject_add, n)
 
     @pcp_group_subject.group("remove", pass_context=True)
-    async def pcp_group_subject_remove(self, ctx: commands.Context, name: str):
-        if len(ctx.message.role_mentions) != 1:
+    async def pcp_group_subject_remove(self, ctx: commands.Context, name: str, group: str):
+        if not role_mention_re.fullmatch(group):
             raise BadArgument()
 
-        cat = next(filter(lambda c: c.name.upper() == ctx.message.role_mentions[0].name.upper(), ctx.guild.categories), None)
+        cat = next(filter(lambda c: c.name.upper() == ctx.message.role_mentions[0].name.upper(),
+                          ctx.guild.categories), None)
         if not cat:
             raise BadArgument()
 
         chan = next(filter(lambda c: c.name.upper() == name.upper(), cat.text_channels), None)
-        if not cat:
+        if not chan:
             raise BadArgument()
 
         await chan.delete()
@@ -170,10 +179,6 @@ class PCP(commands.Cog):
             await locals()["__ex"](self, ctx)
         except Exception as e:
             await ctx.send(f"{e.__class__.__name__}: {e}")
-
-    @pcp.group("test", pass_context=True)
-    async def test(self, ctx: commands.Context):
-        await ctx.message.add_reaction("\U0001f44d")
 
 
 def setup(bot):
