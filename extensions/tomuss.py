@@ -1,8 +1,8 @@
 import re
 from datetime import datetime
-from time import mktime, struct_time
+from time import mktime
 
-from discord import Embed, Forbidden
+from discord import Embed, Forbidden, HTTPException
 from discord.ext import commands, tasks
 from discord.ext.commands import BadArgument
 from feedparser import parse
@@ -87,16 +87,28 @@ class Tomuss(commands.Cog):
             if entries:
                 embed = Embed(title="Tomuss update !")
                 for e in entries:
-                    embed.add_field(name=e.title,
-                                    value=e.summary.replace("<br />", "\n").replace("<b>", "**").replace("</b>", "**"))
+                    if len(e.title) > 256:
+                        title = e.title[:253] + "..."
+                    else:
+                        title = e.title
+
+                    summary = e.summary.replace("<br />", "\n").replace("<b>", "**").replace("</b>", "**")
+                    if len(summary) > 1024:
+                        summary = summary[:1021] + "..."
+
+                    embed.add_field(name=title, value=summary)
                 try:
                     await u.send(embed=embed)
-
-                    t.last = datetime.fromtimestamp(mktime(entries[-1].published_parsed))
-                    s.add(t)
                 except Forbidden:
                     s.delete(t)
-                s.commit()
+                    s.commit()
+                    continue
+                except HTTPException:
+                    await u.send("Too much to send, I can't handle it sorry...")
+                finally:
+                    t.last = datetime.fromtimestamp(mktime(entries[-1].published_parsed))
+                    s.add(t)
+                    s.commit()
 
         s.close()
 
