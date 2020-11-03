@@ -13,4 +13,5 @@ from db.Polls import Polls
 from db.Warn import Warn
 from db.WarnAction import WarnAction
 from db.InviteRole import InviteRole
+from db.Tomuss import Tomuss
 Base.metadata.create_all(engine)
