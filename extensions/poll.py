@@ -63,16 +63,21 @@ class Poll(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        if not payload.member.bot:
+        if not payload.member:
+            user = await self.bot.fetch_user(payload.user_id)
+        else:
+            user = payload.member
+        
+        if not user.bot:
             s = db.Session()
             p = s.query(db.Polls).filter(db.Polls.message == payload.message_id).first()
             if p:
                 message = await self.bot.get_channel(p.channel).fetch_message(p.message)
                 if str(payload.emoji) not in eval(p.reactions):
-                    await message.remove_reaction(payload.emoji, payload.member)
+                    await message.remove_reaction(payload.emoji, user)
                 elif str(payload.emoji) == "\U0001F5D1":
-                    if payload.member.id != p.author:
-                        await message.remove_reaction(payload.emoji, payload.member)
+                    if user.id != p.author:
+                        await message.remove_reaction(payload.emoji, user)
                     else:
                         await self.close_poll(s, p)
                 elif not p.multi:
@@ -80,8 +85,8 @@ class Poll(commands.Cog):
                     for r in message.reactions:
                         if str(r.emoji) != str(payload.emoji):
                             async for u in r.users():
-                                if u == payload.member:
-                                    await r.remove(payload.member)
+                                if u == user:
+                                    await r.remove(user)
                                     f = True
                                     break
                             if f:
