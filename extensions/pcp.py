@@ -9,10 +9,11 @@ from administrator.logger import logger
 
 extension_name = "PCP"
 logger = logger.getChild(extension_name)
-group_re = re.compile(r"(G[0-9]S[0-9]|ASPE|LP DEVOPS|LP ESSIR|LP SID)")
-msg_url_re = re.compile(r"https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)")
-role_mention_re = re.compile(r"<@&[0-9]+>")
-user_mention_re = re.compile(r"<@![0-9]+>")
+group_re = re.compile(r"^(G[0-9]S[0-9]|ASPE|LP DEVOPS2?|LP ESSIR|LP SID)$")
+change_group_role_re = re.compile(r"^(SANS CLASSE|NOUVEAU VENU)$")
+msg_url_re = re.compile(r"^https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)$")
+role_mention_re = re.compile(r"^<@&[0-9]+>$")
+user_mention_re = re.compile(r"^<@![0-9]+>$")
 
 
 class PCP(commands.Cog):
@@ -30,21 +31,24 @@ class PCP(commands.Cog):
             await ctx.message.add_reaction("\U000023f3")
             role = next(filter(lambda r: r.name.upper() == group, ctx.guild.roles), None)
 
-            if not role:
+            def roles() -> list:
+                return list(filter(
+                    lambda r: group_re.fullmatch(r.name.upper()) or change_group_role_re.fullmatch(r.name.upper()),
+                    ctx.author.roles
+                ))
+
+            if not role or role.name in map(lambda r: r.name, roles()):
                 await ctx.message.remove_reaction("\U000023f3", self.bot.user)
                 raise BadArgument()
 
-            roles = list(filter(lambda r: group_re.fullmatch(r.name.upper()) or r.name == "nouveau venu",
-                                ctx.author.roles))
-            if role.name in map(lambda r: r.name, roles):
-                await ctx.message.remove_reaction("\U000023f3", self.bot.user)
-                raise BadArgument()
-            elif roles:
-                await ctx.author.remove_roles(*roles)
+            while roles():
+                await ctx.author.remove_roles(*roles())
 
-            await ctx.author.add_roles(role, atomic=True)
+            while role not in ctx.author.roles:
+                await ctx.author.add_roles(role)
             await ctx.message.remove_reaction("\U000023f3", self.bot.user)
             await ctx.message.add_reaction("\U0001f44d")
+
         elif ctx.invoked_subcommand is None:
             await ctx.invoke(self.pcp_help)
 
