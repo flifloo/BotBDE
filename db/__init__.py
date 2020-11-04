@@ -14,4 +14,5 @@ from db.Warn import Warn
 from db.WarnAction import WarnAction
 from db.InviteRole import InviteRole
 from db.Tomuss import Tomuss
+from db.PCP import PCP
 Base.metadata.create_all(engine)
