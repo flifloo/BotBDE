@@ -67,12 +67,24 @@ class PCP(commands.Cog):
             embed.add_field(name="pcp <group>", value="Join your group", inline=False)
         if await self.pcp_group.can_run(ctx):
             embed.add_field(name="pcp group", value="Manage PCP group", inline=False)
+        if await self.pcp_pin.can_run(ctx):
+            embed.add_field(name="pcp pin <url>", value="Pin a message with the url", inline=False)
+        if await self.pcp_unpin.can_run(ctx):
+            embed.add_field(name="pcp unpin <url>", value="Unpin a message with the url", inline=False)
         if not embed.fields:
             raise MissingPermissions(None)
         await ctx.send(embed=embed)
 
     @pcp.group("pin", pass_context=True)
     async def pcp_pin(self, ctx: commands.Context, url: str):
+        await self.pin(ctx, url, True)
+
+    @pcp.group("unpin", pass_context=True)
+    async def pcp_unpin(self, ctx: commands.Context, url: str):
+        await self.pin(ctx, url, False)
+
+    @staticmethod
+    async def pin(ctx: commands.Context, url: str, action: bool):
         r = msg_url_re.fullmatch(url)
         if not r:
             raise BadArgument()
@@ -86,9 +98,14 @@ class PCP(commands.Cog):
         if not m:
             raise BadArgument()
 
-        await m.pin()
+        if action:
+            await m.pin()
+            msg = "pinned a message"
+        else:
+            await m.unpin()
+            msg = "unpinned a message"
 
-        await ctx.send(f"{ctx.author.mention} pinned a message")
+        await ctx.send(f"{ctx.author.mention} {msg}")
 
     @pcp.group("group", pass_context=True)
     @commands.has_permissions(administrator=True)
