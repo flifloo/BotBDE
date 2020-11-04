@@ -1,6 +1,7 @@
+from traceback import format_exc
+
 from discord.ext import commands
 from discord import Embed
-from administrator.check import is_owner
 from administrator.logger import logger
 
 
@@ -16,7 +17,7 @@ class Extension(commands.Cog):
         return "Manage bot's extensions"
 
     @commands.group("extension", pass_context=True)
-    @commands.check(is_owner)
+    @commands.is_owner()
     async def extension(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             embed = Embed(title="Extensions")
@@ -25,33 +26,36 @@ class Extension(commands.Cog):
             await ctx.send(embed=embed)
 
     @extension.group("load", pass_context=True)
-    @commands.check(is_owner)
+    @commands.is_owner()
     async def extension_load(self, ctx: commands.Context, name: str):
         try:
             self.bot.load_extension(name)
         except Exception as e:
             await ctx.message.add_reaction("\u26a0")
+            await ctx.send(f"{e.__class__.__name__}: {e}\n```{format_exc()}```")
         else:
             await ctx.message.add_reaction("\U0001f44d")
 
     @extension.group("unload", pass_context=True)
-    @commands.check(is_owner)
+    @commands.is_owner()
     async def extension_unload(self, ctx: commands.Context, name: str):
         try:
             self.bot.unload_extension(name)
         except Exception as e:
             await ctx.message.add_reaction("\u26a0")
+            await ctx.send(f"{e.__class__.__name__}: {e}\n```{format_exc()}```")
         else:
             await ctx.message.add_reaction("\U0001f44d")
 
     @extension.group("reload", pass_context=True)
-    @commands.check(is_owner)
+    @commands.is_owner()
     async def extension_reload(self, ctx: commands.Context, name: str):
         try:
             self.bot.unload_extension(name)
             self.bot.load_extension(name)
         except Exception as e:
             await ctx.message.add_reaction("\u26a0")
+            await ctx.send(f"{e.__class__.__name__}: {e}\n```{format_exc()}```")
         else:
             await ctx.message.add_reaction("\U0001f44d")
 
