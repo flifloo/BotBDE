@@ -2,15 +2,14 @@ import re
 
 from discord import Embed, Member
 from discord.ext import commands
-from discord.ext.commands import BadArgument
+from discord.ext.commands import BadArgument, MissingPermissions
 
+import db
 from administrator.logger import logger
 
 
 extension_name = "PCP"
 logger = logger.getChild(extension_name)
-group_re = re.compile(r"^(G[0-9]S[0-9]|ASPE|LP DEVOPS2?|LP ESSIR|LP SID)$")
-change_group_role_re = re.compile(r"^(SANS CLASSE|NOUVEAU VENU)$")
 msg_url_re = re.compile(r"^https://.*discord.*\.com/channels/[0-9]+/([0-9+]+)/([0-9]+)$")
 role_mention_re = re.compile(r"^<@&[0-9]+>$")
 user_mention_re = re.compile(r"^<@![0-9]+>$")
@@ -27,37 +26,49 @@ class PCP(commands.Cog):
     @commands.guild_only()
     async def pcp(self, ctx: commands.Context):
         group = ctx.message.content.replace(f"{ctx.prefix}{ctx.command} ", "").upper()
-        if group and group_re.fullmatch(group):
-            await ctx.message.add_reaction("\U000023f3")
-            role = next(filter(lambda r: r.name.upper() == group, ctx.guild.roles), None)
+        if group:
+            s = db.Session()
+            p = s.query(db.PCP).get(ctx.guild.id)
+            s.close()
+            if p and re.fullmatch(p.roles_re, group):
+                await ctx.message.add_reaction("\U000023f3")
+                role = next(filter(lambda r: r.name.upper() == group, ctx.guild.roles), None)
 
-            def roles() -> list:
-                return list(filter(
-                    lambda r: group_re.fullmatch(r.name.upper()) or change_group_role_re.fullmatch(r.name.upper()),
-                    ctx.author.roles
-                ))
+                def roles() -> list:
+                    return list(filter(
+                        lambda r: re.fullmatch(p.roles_re, r.name.upper()) or
+                        (p.start_role_re and re.fullmatch(p.start_role_re, r.name.upper())),
+                        ctx.author.roles
+                    ))
 
-            if not role or role.name in map(lambda r: r.name, roles()):
+                if not role or role.name in map(lambda r: r.name, roles()):
+                    await ctx.message.remove_reaction("\U000023f3", self.bot.user)
+                    raise BadArgument()
+
+                while roles():
+                    await ctx.author.remove_roles(*roles())
+
+                while role not in ctx.author.roles:
+                    await ctx.author.add_roles(role)
                 await ctx.message.remove_reaction("\U000023f3", self.bot.user)
-                raise BadArgument()
+                await ctx.message.add_reaction("\U0001f44d")
+                return
 
-            while roles():
-                await ctx.author.remove_roles(*roles())
-
-            while role not in ctx.author.roles:
-                await ctx.author.add_roles(role)
-            await ctx.message.remove_reaction("\U000023f3", self.bot.user)
-            await ctx.message.add_reaction("\U0001f44d")
-
-        elif ctx.invoked_subcommand is None:
+        if ctx.invoked_subcommand is None:
             await ctx.invoke(self.pcp_help)
 
     @pcp.group("help", pass_context=True)
     async def pcp_help(self, ctx: commands.Context):
         embed = Embed(title="PCP help")
-        embed.add_field(name="pcp <group>", value="Join your group", inline=False)
+        s = db.Session()
+        p = s.query(db.PCP).get(ctx.guild.id)
+        s.close()
+        if p:
+            embed.add_field(name="pcp <group>", value="Join your group", inline=False)
         if await self.pcp_group.can_run(ctx):
             embed.add_field(name="pcp group", value="Manage PCP group", inline=False)
+        if not embed.fields:
+            raise MissingPermissions(None)
         await ctx.send(embed=embed)
 
     @pcp.group("pin", pass_context=True)
@@ -88,14 +99,23 @@ class PCP(commands.Cog):
     @pcp_group.group("help", pass_context=True)
     async def pcp_group_help(self, ctx: commands.Context):
         embed = Embed(title="PCP group help")
+        embed.add_field(name="pcp group set <role Regex> [Welcome role Regex]",
+                        value="Set regex for group role", inline=False)
+        embed.add_field(name="pcp group unset", value="Unset regex for group role", inline=False)
+        embed.add_field(name="pcp group subject", value="Manage subjects for group", inline=False)
         embed.add_field(name="pcp group fix_vocal",
                         value="Check all text channel permissions to reapply vocal permissions", inline=False)
-        embed.add_field(name="pcp group subject", value="Manage subjects for group", inline=False)
         await ctx.send(embed=embed)
 
     @pcp_group.group("fix_vocal", pass_context=True)
     async def pcp_group_fix_vocal(self, ctx: commands.Context):
-        for cat in filter(lambda c: group_re.fullmatch(c.name.upper()), ctx.guild.categories):
+        s = db.Session()
+        p = s.query(db.PCP).get(ctx.guild.id)
+        s.close()
+        if not p:
+            raise BadArgument()
+
+        for cat in filter(lambda c: re.fullmatch(p.roles_re, c.name.upper()), ctx.guild.categories):
             await ctx.send(f"{cat.name}...")
             teachers = []
             for t in cat.text_channels:
@@ -106,6 +126,32 @@ class PCP(commands.Cog):
             for t in teachers:
                 await voc.set_permissions(t, view_channel=True)
             await ctx.send(f"{cat.name} done")
+        await ctx.message.add_reaction("\U0001f44d")
+
+    @pcp_group.group("set", pass_context=True)
+    async def pcp_group_set(self, ctx: commands.Context, roles_re: str, start_role_re: str = None):
+        s = db.Session()
+        p = s.query(db.PCP).get(ctx.guild.id)
+        if p:
+            p.roles_re = roles_re.upper()
+            p.start_role_re = start_role_re.upper() if start_role_re else None
+        else:
+            p = db.PCP(ctx.guild.id, roles_re.upper(), start_role_re.upper() if start_role_re else None)
+        s.add(p)
+        s.commit()
+        s.close()
+        await ctx.message.add_reaction("\U0001f44d")
+
+    @pcp_group.group("unset", pass_context=True)
+    async def pcp_group_unset(self, ctx: commands.Context):
+        s = db.Session()
+        p = s.query(db.PCP).get(ctx.guild.id)
+        if not p:
+            s.close()
+            raise BadArgument()
+        s.delete(p)
+        s.commit()
+        s.close()
         await ctx.message.add_reaction("\U0001f44d")
 
     @pcp_group.group("subject", pass_context=True)
