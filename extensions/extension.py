@@ -2,7 +2,7 @@ from traceback import format_exc
 
 from discord.ext import commands
 from discord import Embed, Guild
-from discord.ext.commands import MissingPermissions, BadArgument
+from discord.ext.commands import MissingPermissions, BadArgument, CommandError
 
 import db
 from administrator.logger import logger
@@ -27,20 +27,19 @@ class Extension(commands.Cog):
     @extension.group("help", pass_context=True)
     async def extension_help(self, ctx: commands.Context):
         embed = Embed(title="Extension help")
-        if await self.extension_list.can_run(ctx):
-            embed.add_field(name="extension list", value="List all enabled extensions", inline=False)
-        if await self.extension_enable.can_run(ctx):
-            embed.add_field(name="extension enable", value="Enable an extensions", inline=False)
-        if await self.extension_disable.can_run(ctx):
-            embed.add_field(name="extension disable", value="Disable an extensions", inline=False)
-        if await self.extension_load.can_run(ctx):
-            embed.add_field(name="extension loaded", value="List all loaded extensions", inline=False)
-        if await self.extension_load.can_run(ctx):
-            embed.add_field(name="extension load <name>", value="Load an extension", inline=False)
-        if await self.extension_unload.can_run(ctx):
-            embed.add_field(name="extension unload <name>", value="Unload an extension", inline=False)
-        if await self.extension_reload.can_run(ctx):
-            embed.add_field(name="extension reload <name>", value="Reload an extension", inline=False)
+        for c, n, v in [[self.extension_list, "extension list", "List all enabled extensions"],
+                        [self.extension_enable, "extension enable", "Enable an extensions"],
+                        [self.extension_disable, "extension disable", "Disable an extensions"],
+                        [self.extension_loaded, "extension loaded", "List all loaded extensions"],
+                        [self.extension_load, "extension load <name>", "Load an extension"],
+                        [self.extension_unload, "extension unload <name>", "Unload an extension"],
+                        [self.extension_reload, "extension reload <name>", "Reload an extension"]]:
+            try:
+                if await c.can_run(ctx):
+                    embed.add_field(name=n, value=v, inline=False)
+            except CommandError:
+                pass
+
         if not embed.fields:
             raise MissingPermissions(None)
         await ctx.send(embed=embed)
