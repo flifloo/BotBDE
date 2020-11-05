@@ -131,6 +131,21 @@ class Utils(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.group("about", pass_context=True)
+    @is_enabled()
+    async def about(self, ctx: commands.Context):
+        embed = Embed(title=self.bot.user.display_name, description=self.bot.description)
+        embed.set_author(name="Administrator", icon_url=self.bot.user.avatar_url, url="https://github.com/flifloo")
+        flifloo = self.bot.get_user(177393521051959306)
+        embed.set_footer(text=f"Made with ❤️ by {flifloo.display_name}", icon_url=flifloo.avatar_url)
+        embed.add_field(name="Owned by",
+                        value=(await self.bot.application_info()).owner.display_name)
+        embed.add_field(name="Guilds", value=str(len(self.bot.guilds)))
+        embed.add_field(name="Extensions", value=str(len(self.bot.extensions)))
+        embed.add_field(name="Commands", value=str(len(self.bot.all_commands)))
+        embed.add_field(name="Latency", value=f"{round(self.bot.latency*1000)} ms")
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     logger.info(f"Loading...")
