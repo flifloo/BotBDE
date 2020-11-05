@@ -7,8 +7,9 @@ from discord import Embed, RawReactionActionEvent, RawBulkMessageDeleteEvent, Ra
 from discord.ext.commands import BadArgument
 
 from administrator import db
+from administrator.check import is_enabled
 from administrator.logger import logger
-
+from administrator.utils import event_is_enabled
 
 extension_name = "rorec"
 logger = logger.getChild(extension_name)
@@ -40,6 +41,7 @@ class RoRec(commands.Cog):
             await (await ctx.channel.fetch_message(ctx.message.id)).remove_reaction(emoji, self.bot.user)
 
     @commands.group("rorec", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rorec(self, ctx: commands.Context):
@@ -204,6 +206,8 @@ class RoRec(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         s = db.Session()
+        if payload.guild_id and not event_is_enabled(self.qualified_name, payload.guild_id, s):
+            return
         m = s.query(db.RoRec).filter(db.RoRec.message == payload.message_id).first()
         s.close()
         if m and payload.member.id != self.bot.user.id:
