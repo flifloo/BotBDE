@@ -4,6 +4,7 @@ from discord import Embed, Member, Guild
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
+from administrator.check import is_enabled
 from administrator.logger import logger
 
 
@@ -19,6 +20,7 @@ class Utils(commands.Cog):
         return "Some tools"
 
     @commands.group("utils", pass_context=True)
+    @is_enabled()
     async def utils(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             await ctx.invoke(self.utils_help)
@@ -50,12 +52,14 @@ class Utils(commands.Cog):
             await ctx.send(f"```{e.__class__.__name__}: {e}```")
 
     @commands.group("ping", pass_context=True)
+    @is_enabled()
     async def ping(self, ctx: commands.Context):
         start = datetime.now()
         msg = await ctx.send(f"Discord WebSocket latency: `{round(self.bot.latency*1000)}ms`")
         await msg.edit(content=msg.content+"\n"+f"Bot latency: `{round((msg.created_at - start).microseconds/1000)}ms`")
 
     @commands.group("info", pass_context=True)
+    @is_enabled()
     async def info(self, ctx: commands.Context):
         if len(ctx.message.mentions) > 1:
             raise BadArgument()
