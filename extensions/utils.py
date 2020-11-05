@@ -2,7 +2,7 @@ from datetime import datetime
 
 from discord import Embed, Member, Guild
 from discord.ext import commands
-from discord.ext.commands import BadArgument
+from discord.ext.commands import BadArgument, CommandError
 
 from administrator.check import is_enabled
 from administrator.logger import logger
@@ -28,9 +28,13 @@ class Utils(commands.Cog):
     @utils.group("help", pass_context=True)
     async def utils_help(self, ctx: commands.Context):
         embed = Embed(title="Utils help")
-        if self.eval.can_run(ctx):
-            embed.add_field(name="eval \`\`\`code\`\`\`", value="Execute some code", inline=False)
+        try:
+            if await self.eval.can_run(ctx):
+                embed.add_field(name="eval \`\`\`code\`\`\`", value="Execute some code", inline=False)
+        except CommandError:
+            pass
         embed.add_field(name="ping", value="Return the ping with the discord API", inline=False)
+        embed.add_field(name="info [@user]", value="Show information on guild or user specified", inline=False)
         await ctx.send(embed=embed)
 
     @commands.group("eval", pass_context=True)
