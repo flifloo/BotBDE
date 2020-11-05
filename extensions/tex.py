@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from discord import Embed
 from discord.ext import commands
 
+from administrator.check import is_enabled
 from administrator.logger import logger
 
 
@@ -18,6 +19,7 @@ class TeX(commands.Cog):
         return "Render TeX formula"
 
     @commands.group("tex", pass_context=True)
+    @is_enabled()
     async def tex(self, ctx: commands.Context):
         if ctx.message.content.count("`") == 2:
             start = ctx.message.content.find("`")
