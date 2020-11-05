@@ -96,7 +96,7 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, user: Member):
-        if user.guild and not event_is_enabled(self.qualified_name, user.guild.id):
+        if isinstance(user, Member) and not event_is_enabled(self.qualified_name, user.guild.id):
             return
         if not user.bot:
             if self.voice_message and reaction.message.id == self.voice_message.id:

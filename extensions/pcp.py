@@ -2,10 +2,9 @@ import re
 
 from discord import Embed, Member
 from discord.ext import commands
-from discord.ext.commands import BadArgument, MissingPermissions
+from discord.ext.commands import BadArgument, MissingPermissions, CommandError
 
 import db
-from administrator.check import is_enabled
 from administrator.logger import logger
 
 
@@ -24,7 +23,6 @@ class PCP(commands.Cog):
         return "PCP Univ Lyon 1"
 
     @commands.group("pcp", pass_context=True)
-    @is_enabled()
     @commands.guild_only()
     async def pcp(self, ctx: commands.Context):
         group = ctx.message.content.replace(f"{ctx.prefix}{ctx.command} ", "").upper()
@@ -67,12 +65,14 @@ class PCP(commands.Cog):
         s.close()
         if p:
             embed.add_field(name="pcp <group>", value="Join your group", inline=False)
-        if await self.pcp_group.can_run(ctx):
-            embed.add_field(name="pcp group", value="Manage PCP group", inline=False)
-        if await self.pcp_pin.can_run(ctx):
-            embed.add_field(name="pcp pin <url>", value="Pin a message with the url", inline=False)
-        if await self.pcp_unpin.can_run(ctx):
-            embed.add_field(name="pcp unpin <url>", value="Unpin a message with the url", inline=False)
+        for c, n, v in [[self.pcp_group, "pcp group", "Manage PCP group"],
+                        [self.pcp_pin, "pcp pin <url>", "Pin a message with the url"],
+                        [self.pcp_unpin, "pcp unpin <url>", "Unpin a message with the url"]]:
+            try:
+                if await c.can_run(ctx):
+                    embed.add_field(name=n, value=v, inline=False)
+            except CommandError:
+                pass
         if not embed.fields:
             raise MissingPermissions("")
         await ctx.send(embed=embed)
