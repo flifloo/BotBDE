@@ -3,8 +3,9 @@ from asyncio import sleep
 from discord.ext import commands
 from discord import Embed, RawReactionActionEvent
 
+from administrator.check import is_enabled
 from administrator.logger import logger
-
+from administrator.utils import event_is_enabled
 
 extension_name = "purge"
 logger = logger.getChild(extension_name)
@@ -19,6 +20,7 @@ class Purge(commands.Cog):
         return "Purge all messages between the command and the next add reaction"
 
     @commands.group("purge", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx: commands.Context):
@@ -45,6 +47,8 @@ class Purge(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         if payload.guild_id:
+            if not event_is_enabled(self.qualified_name, payload.guild_id):
+                return
             user = self.bot.get_user(payload.user_id)
             message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id)\
                 .fetch_message(payload.message_id)
