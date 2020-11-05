@@ -1,10 +1,19 @@
 from discord.ext import commands
-from administrator import config
+
+import db
 
 
-class NotOwner(commands.CheckFailure):
+class ExtensionDisabled(commands.CheckFailure):
     pass
 
 
-async def is_owner(ctx: commands.Context):
-    return ctx.author.id == config.get("admin_id")
+def is_enabled():
+    async def check(ctx: commands.Context):
+        if ctx.command.cog:
+            s = db.Session()
+            es = s.query(db.ExtensionState).get((ctx.command.cog.qualified_name, ctx.guild.id))
+            s.close()
+            if es and not es.state:
+                raise ExtensionDisabled()
+        return True
+    return commands.check(check)

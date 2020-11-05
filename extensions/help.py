@@ -4,6 +4,7 @@ from discord.ext.commands import CommandNotFound, MissingRequiredArgument, BadAr
     NoPrivateMessage, CommandError, NotOwner
 
 from administrator import config
+from administrator.check import ExtensionDisabled
 from administrator.logger import logger
 
 
@@ -43,7 +44,9 @@ class Help(commands.Cog):
             await ctx.message.add_reaction("\u274C")
         elif isinstance(error, NotOwner) or isinstance(error, MissingPermissions)\
                 or isinstance(error, NoPrivateMessage):
-            await ctx.message.add_reaction("\u274C")
+            await ctx.message.add_reaction("\U000026D4")
+        elif isinstance(error, ExtensionDisabled):
+            await ctx.message.add_reaction("\U0001F6AB")
         else:
             await ctx.send("An error occurred !")
             raise error

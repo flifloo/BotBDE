@@ -1,5 +1,4 @@
 {"prefix":  "!",
   "token":  "GOOD_BOT_TOKEN",
-  "admin_id":  1234567890,
   "db": "postgresql://usr:pass@localhost:5432/sqlalchemy"
 }
