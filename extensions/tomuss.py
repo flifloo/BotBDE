@@ -8,6 +8,7 @@ from discord.ext.commands import BadArgument
 from feedparser import parse
 
 import db
+from administrator.check import is_enabled
 from administrator.logger import logger
 
 
@@ -25,6 +26,7 @@ class Tomuss(commands.Cog):
         return "PCP Univ Lyon 1"
 
     @commands.group("tomuss", pass_context=True)
+    @is_enabled()
     async def tomuss(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             await ctx.invoke(self.tomuss_help)
