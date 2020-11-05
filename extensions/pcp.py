@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument, MissingPermissions
 
 import db
+from administrator.check import is_enabled
 from administrator.logger import logger
 
 
@@ -23,6 +24,7 @@ class PCP(commands.Cog):
         return "PCP Univ Lyon 1"
 
     @commands.group("pcp", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     async def pcp(self, ctx: commands.Context):
         group = ctx.message.content.replace(f"{ctx.prefix}{ctx.command} ", "").upper()
