@@ -9,7 +9,7 @@ class ExtensionDisabled(commands.CheckFailure):
 
 def is_enabled():
     async def check(ctx: commands.Context):
-        if ctx.command.cog:
+        if ctx.command.cog and ctx.guild:
             s = db.Session()
             es = s.query(db.ExtensionState).get((ctx.command.cog.qualified_name, ctx.guild.id))
             s.close()
