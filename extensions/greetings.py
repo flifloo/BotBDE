@@ -2,8 +2,10 @@ from discord.ext import commands
 from discord import Member, Embed, Forbidden
 from discord.ext.commands import BadArgument
 
+from administrator.check import is_enabled
 from administrator.logger import logger
 from administrator import db, config
+from administrator.utils import event_is_enabled
 
 
 def check_greetings_message_type(message_type):
@@ -23,6 +25,7 @@ class Greetings(commands.Cog):
         return "Setup join and leave message"
 
     @commands.group("greetings", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def greetings(self, ctx: commands.Context):
@@ -84,6 +87,8 @@ class Greetings(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: Member):
         s = db.Session()
+        if not event_is_enabled(self.qualified_name, member.guild.id, s):
+            return
         m = s.query(db.Greetings).filter(db.Greetings.guild == member.guild.id).first()
         s.close()
         if m and m.join_enable:
@@ -96,6 +101,8 @@ class Greetings(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: Member):
         s = db.Session()
+        if not event_is_enabled(self.qualified_name, member.guild.id, s):
+            return
         m = s.query(db.Greetings).filter(db.Greetings.guild == member.guild.id).first()
         s.close()
         if m and m.leave_enable:
