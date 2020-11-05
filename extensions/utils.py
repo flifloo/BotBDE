@@ -2,7 +2,7 @@ from datetime import datetime
 
 from discord import Embed, Member, Guild
 from discord.ext import commands
-from discord.ext.commands import BadArgument
+from discord.ext.commands import BadArgument, CommandError
 
 from administrator.check import is_enabled
 from administrator.logger import logger
@@ -28,9 +28,13 @@ class Utils(commands.Cog):
     @utils.group("help", pass_context=True)
     async def utils_help(self, ctx: commands.Context):
         embed = Embed(title="Utils help")
-        if self.eval.can_run(ctx):
-            embed.add_field(name="eval \`\`\`code\`\`\`", value="Execute some code", inline=False)
+        try:
+            if await self.eval.can_run(ctx):
+                embed.add_field(name="eval \`\`\`code\`\`\`", value="Execute some code", inline=False)
+        except CommandError:
+            pass
         embed.add_field(name="ping", value="Return the ping with the discord API", inline=False)
+        embed.add_field(name="info [@user]", value="Show information on guild or user specified", inline=False)
         await ctx.send(embed=embed)
 
     @commands.group("eval", pass_context=True)
@@ -125,6 +129,21 @@ class Utils(commands.Cog):
             embed.add_field(name="Shard ID", value=guild.shard_id)
             embed.add_field(name="Created at", value=guild.created_at)
 
+        await ctx.send(embed=embed)
+
+    @commands.group("about", pass_context=True)
+    @is_enabled()
+    async def about(self, ctx: commands.Context):
+        embed = Embed(title=self.bot.user.display_name, description=self.bot.description)
+        embed.set_author(name="Administrator", icon_url=self.bot.user.avatar_url, url="https://github.com/flifloo")
+        flifloo = self.bot.get_user(177393521051959306)
+        embed.set_footer(text=f"Made with ❤️ by {flifloo.display_name}", icon_url=flifloo.avatar_url)
+        embed.add_field(name="Owned by",
+                        value=(await self.bot.application_info()).owner.display_name)
+        embed.add_field(name="Guilds", value=str(len(self.bot.guilds)))
+        embed.add_field(name="Extensions", value=str(len(self.bot.extensions)))
+        embed.add_field(name="Commands", value=str(len(self.bot.all_commands)))
+        embed.add_field(name="Latency", value=f"{round(self.bot.latency*1000)} ms")
         await ctx.send(embed=embed)
 
 

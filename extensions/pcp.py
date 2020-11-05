@@ -74,7 +74,7 @@ class PCP(commands.Cog):
         if await self.pcp_unpin.can_run(ctx):
             embed.add_field(name="pcp unpin <url>", value="Unpin a message with the url", inline=False)
         if not embed.fields:
-            raise MissingPermissions(None)
+            raise MissingPermissions("")
         await ctx.send(embed=embed)
 
     @pcp.group("pin", pass_context=True)

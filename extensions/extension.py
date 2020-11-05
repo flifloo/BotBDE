@@ -41,7 +41,7 @@ class Extension(commands.Cog):
                 pass
 
         if not embed.fields:
-            raise MissingPermissions(None)
+            raise MissingPermissions("")
         await ctx.send(embed=embed)
 
     @extension.group("list", pass_context=True)
