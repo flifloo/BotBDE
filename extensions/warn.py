@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument
 
 from administrator import db
+from administrator.check import is_enabled
 from administrator.logger import logger
 from administrator.utils import time_pars, seconds_to_time_string
 
@@ -39,6 +40,7 @@ class Warn(commands.Cog):
         return users[user]
 
     @commands.group("warn", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     #@commands.has_permissions(manage_roles=True, kick_members=True, ban_members=True, mute_members=True)
     async def warn(self, ctx: commands.Context):
