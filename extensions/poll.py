@@ -6,8 +6,9 @@ from discord import Embed, RawReactionActionEvent, RawMessageDeleteEvent, RawBul
 from discord.ext.commands import BadArgument
 
 import db
+from administrator.check import is_enabled
 from administrator.logger import logger
-
+from administrator.utils import event_is_enabled
 
 extension_name = "poll"
 logger = logger.getChild(extension_name)
@@ -25,6 +26,7 @@ class Poll(commands.Cog):
         return "Create poll with a simple command"
 
     @commands.group("poll", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     async def poll(self, ctx: commands.Context, name: str, *choices):
         if name == "help":
@@ -67,9 +69,11 @@ class Poll(commands.Cog):
             user = await self.bot.fetch_user(payload.user_id)
         else:
             user = payload.member
-        
+
         if not user.bot:
             s = db.Session()
+            if payload.guild_id and not event_is_enabled(self.qualified_name, payload.guild_id, s):
+                return
             p = s.query(db.Polls).filter(db.Polls.message == payload.message_id).first()
             if p:
                 message = await self.bot.get_channel(p.channel).fetch_message(p.message)

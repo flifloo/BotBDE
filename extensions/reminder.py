@@ -6,6 +6,7 @@ from discord import Embed
 from discord.ext.commands import BadArgument
 from discord.ext import tasks
 
+from administrator.check import is_enabled
 from administrator.logger import logger
 from administrator import db
 from administrator.utils import time_pars, seconds_to_time_string
@@ -22,6 +23,7 @@ class Reminders(commands.Cog, name="Reminder"):
         return "Create and manage reminders"
 
     @commands.group("reminder", pass_context=True)
+    @is_enabled()
     async def reminder(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             await ctx.invoke(self.reminder_help)

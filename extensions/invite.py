@@ -6,7 +6,9 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument
 
 import db
+from administrator.check import is_enabled
 from administrator.logger import logger
+from administrator.utils import event_is_enabled
 
 extension_name = "invite"
 logger = logger.getChild(extension_name)
@@ -24,6 +26,7 @@ class Invite(commands.Cog):
         return "Get role from a special invite link"
 
     @commands.group("invite", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     async def invite(self, ctx: commands.Context):
@@ -77,6 +80,8 @@ class Invite(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: Member):
+        if not event_is_enabled(self.qualified_name, member.guild.id):
+            return
         user_invites = await member.guild.invites()
         for i in self.invites[member.guild.id]:
             for ui in user_invites:
@@ -93,11 +98,15 @@ class Invite(commands.Cog):
 
     @commands.Cog.listener()
     async def on_invite_create(self, invite):
+        if not event_is_enabled(self.qualified_name, invite.guild.id):
+            return
         self.invites[invite.guild.id] = await invite.guild.invites()
 
     @commands.Cog.listener()
     async def on_invite_delete(self, invite):
         s = db.Session()
+        if not event_is_enabled(self.qualified_name, invite.guild.id, s):
+            return
         invite_role = s.query(db.InviteRole).get({"guild_id": invite.guild.id, "invite_code": invite.code})
         if invite_role:
             s.delete(invite_role)

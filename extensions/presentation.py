@@ -2,9 +2,10 @@ from discord.ext import commands
 from discord import Embed, Message
 from discord.ext.commands import BadArgument
 
+from administrator.check import is_enabled
 from administrator.logger import logger
 from administrator import db
-
+from administrator.utils import event_is_enabled
 
 extension_name = "presentation"
 logger = logger.getChild(extension_name)
@@ -18,6 +19,7 @@ class Presentation(commands.Cog):
         return "Give role to user who make a presentation in a dedicated channel"
 
     @commands.group("presentation", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def presentation(self, ctx: commands.Context):
@@ -63,6 +65,8 @@ class Presentation(commands.Cog):
     async def on_message(self, message: Message):
         if message.guild is not None:
             s = db.Session()
+            if not event_is_enabled(self.qualified_name, message.guild.id, s):
+                return
             p = s.query(db.Presentation).filter(db.Presentation.guild == message.guild.id).first()
             s.close()
             if p and p.channel == message.channel.id and p.role not in map(lambda x: x.id, message.author.roles):

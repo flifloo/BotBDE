@@ -2,8 +2,9 @@ from discord.ext import commands
 from discord import Member, VoiceState, Embed, Reaction, Guild
 from discord.ext.commands import CommandNotFound
 
+from administrator.check import is_enabled
 from administrator.logger import logger
-
+from administrator.utils import event_is_enabled
 
 extension_name = "speak"
 logger = logger.getChild(extension_name)
@@ -25,6 +26,7 @@ class Speak(commands.Cog):
         return "Speech manager"
 
     @commands.group("speak", pass_context=True)
+    @is_enabled()
     @commands.guild_only()
     @commands.has_guild_permissions(mute_members=True)
     async def speak(self, ctx: commands.Context):
@@ -76,6 +78,8 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        if member.guild and not event_is_enabled(self.qualified_name, member.guild.id):
+            return
         if self.voice_chan and self.strict and \
                 (before is None or before.channel is None or before.channel.id != self.voice_chan) and \
                 (after is not None and after.channel is not None and after.channel.id == self.voice_chan) and \
@@ -92,6 +96,8 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, user: Member):
+        if user.guild and not event_is_enabled(self.qualified_name, user.guild.id):
+            return
         if not user.bot:
             if self.voice_message and reaction.message.id == self.voice_message.id:
                 if str(reaction.emoji) == "\U0001f5e3":
@@ -211,6 +217,8 @@ class Speak(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction: Reaction, user: Member):
+        if user.guild and not event_is_enabled(self.qualified_name, user.guild.id):
+            return
         if not user.bot:
             if self.voice_message and reaction.message.id == self.voice_message.id:
                 if str(reaction.emoji) == "\U0001f5e3" and user.id in self.waiting and user.id != self.last_speaker:
