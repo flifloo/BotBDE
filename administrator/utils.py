@@ -2,6 +2,9 @@ import re
 from datetime import timedelta
 
 from discord.ext.commands import BadArgument
+from sqlalchemy.orm import Session
+
+import db
 
 
 def time_pars(s: str) -> timedelta:
@@ -23,3 +26,19 @@ def seconds_to_time_string(seconds: float) -> str:
     if days > 0 else f"{hours}h {minutes}m {seconds}s"
     if hours > 0 else f"{minutes}m {seconds}s"
     if minutes > 0 else f"{seconds}s"}"""
+
+
+def event_is_enabled(cog: str, guild_id: int, s: Session = None) -> bool:
+    close = False
+    if not s:
+        s = db.Session()
+        close = True
+
+    es = s.query(db.ExtensionState).get((cog, guild_id))
+
+    if close or (es and not es.state):
+        s.close()
+
+    if es:
+        return es.state
+    return True
