@@ -15,4 +15,5 @@ from db.WarnAction import WarnAction
 from db.InviteRole import InviteRole
 from db.Tomuss import Tomuss
 from db.PCP import PCP
+from db.Extension import Extension, ExtensionState
 Base.metadata.create_all(engine)
