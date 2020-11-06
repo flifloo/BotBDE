@@ -87,6 +87,7 @@ class RoRec(commands.Cog):
         s = db.Session()
         s.add(r)
         s.commit()
+        s.close()
         await ctx.message.add_reaction("\U0001f44d")
 
     @rorec.group("edit", pass_context=True)
